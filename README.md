@@ -6,6 +6,8 @@
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
 
+<img width="1351" height="726" alt="Screenshot 2026-03-26 at 15 36 25" src="https://github.com/user-attachments/assets/d36b4e94-1d71-4e96-bb3c-eed2c29882d3" />
+
 ## Overview
 
 A full-stack geospatial pipeline that transforms raw water chemistry data into actionable decision-support maps for AMD remediation and REE recovery in West Virginia. Built on a custom multi-factor scoring model, IDW spatial interpolation, and ArcGIS Online as the deployment layer.
