@@ -23,12 +23,6 @@ At the same time, AMD-impacted waters carry REE signals that may support domesti
 
 The challenge is operational, not just scientific:
 
-| Stakeholder | Need |
-|---|---|
-| Field teams | Clear spatial picture of worst contamination |
-| Planners | Downloadable data, not one-off analyses |
-| Stakeholders | Transparent metrics, not black-box maps |
-
 ## Scoring Model
 
 ### Normalization
@@ -57,17 +51,6 @@ $$S_i^{AMD} = 0.30\,\widetilde{pH}^{risk}_i + 0.20\,\widetilde{SO_4}_i + 0.20\,\
 | Mn | 0.15 | Manganese — downstream risk |
 
 Higher score = stronger contamination intensity.
-
-
-### REE Opportunity Score
-
-$$S_i^{REE} = 0.45\,\widetilde{REE}_{source,i} + 0.25\,\widetilde{pH}^{extract}_i - 0.30\,\widetilde{C}^{comp}_i$$
-
-Where competitive cation burden is:
-
-$$C_i^{comp} = Ca_i + Fe_i + Al_i + Mn_i + K_i + Mg_i + Na_i$$
-
-Higher score = better extraction feasibility. The penalty term captures competing ions that reduce REE separation efficiency.
 
 
 ### Spatial Interpolation (IDW)
@@ -111,14 +94,6 @@ Layer stacks, basemap interpretation, scale-aware cartography, and thematic over
 Station-level parameter retrieval, time-window queries, and export-driven review — grounding the model in real field data quality constraints and temporal gap analysis.
 
 ![USGS provisional station data workflow](website-images/Provisional-Data.png)
-
-### Final Integration: ArcGIS Online
-
-After these stages, ArcGIS Online was selected for:
-- Compositing spatial layers (risk + opportunity + watershed context)
-- Popups and dashboards for non-technical interpretation
-- Public sharing and export for real partner collaboration
-
 ---
 
 ## Key Engineering Challenges
