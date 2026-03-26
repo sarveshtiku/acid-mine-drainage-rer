@@ -1,4 +1,4 @@
-# Acid Mine Drainage & Rare Earth Elements Spatial Intelligence Platform
+# Acid Mine Drainage & Rare Earth Elements Spatial Intel Platform
 ### West Virginia Acid Mine Drainage & Rare Earth Element Mapping
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)
