@@ -1,0 +1,38 @@
+{
+  "amd_severity": {
+    "type": "heatmap",
+    "blur": 15,
+    "radius": 12,
+    "colorStops": [
+      { "ratio": 0, "color": [0, 255, 255, 0.3] },
+      { "ratio": 0.5, "color": [0, 200, 255, 0.6] },
+      { "ratio": 0.75, "color": [255, 165, 0, 0.8] },
+      { "ratio": 1, "color": [255, 0, 0, 1] }
+    ],
+    "field": "amd_score",
+    "minValue": 0,
+    "maxValue": 100
+  },
+  "ree_potential": {
+    "type": "graduated",
+    "field": "ree_score",
+    "classification": "natural-breaks",
+    "breakCount": 5,
+    "colorScheme": "YlOrBr",
+    "minValue": 0,
+    "maxValue": 100
+  },
+  "water_quality_points": {
+    "type": "simple",
+    "style": "circle",
+    "color": [0, 122, 194, 0.9],
+    "size": 8,
+    "outline": { "color": [255, 255, 255], "width": 1 }
+  },
+  "hydrology_units": {
+    "type": "simple",
+    "style": "outline",
+    "color": [0, 0, 0, 0],
+    "outline": { "color": [80, 80, 80], "width": 1 }
+  }
+}

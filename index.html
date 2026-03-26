@@ -1,0 +1,1498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<title>WV AMD — West Virginia Acid Mine Drainage Atlas</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<meta name="description" content="An immersive, cinematic atlas of acid mine drainage and rare earth recovery across Appalachian watersheds."/>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;0,700;1,300;1,400;1,600&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════════
+   TOKENS — BIOLUMINESCENT PALETTE
+═══════════════════════════════════════════════════════════ */
+:root{
+  --bg:#020810;
+  --surf:rgba(2,8,16,0.85);
+  --card:rgba(4,12,24,0.9);
+  --teal:#00d9a3; --teal-b:#00ffcc; --teal-g:rgba(0,217,163,.1);
+  --blue:#0066ff; --blue-g:rgba(0,102,255,.1);
+  --amber:#ff8c00; --amber-g:rgba(255,140,0,.12);
+  --crimson:#ff4040;
+  --text:#c8e8ff; --t2:#4a8ba8; --t3:#1e3d5a;
+  --bord:rgba(0,217,163,0.1);
+  --serif:'Cormorant Garamond',Georgia,serif;
+  --sans:'Inter',system-ui,sans-serif;
+  --mw:1200px; --hh:64px; --r:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:auto}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);overflow-x:hidden;cursor:none;-webkit-font-smoothing:antialiased}
+a{text-decoration:none;color:var(--teal)}
+img,iframe,canvas{display:block}
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:#0a1e38;border-radius:2px}
+
+/* ═══════════════════════════════════════════════════════════
+   CURSOR
+═══════════════════════════════════════════════════════════ */
+#cdot{position:fixed;width:6px;height:6px;background:#fff;border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:difference}
+#cring{position:fixed;width:34px;height:34px;border:1px solid rgba(255,255,255,.5);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:width .22s,height .22s,border-color .22s;mix-blend-mode:difference}
+.chov #cring{width:58px;height:58px;border-color:rgba(0,217,163,.85)}
+
+/* ═══════════════════════════════════════════════════════════
+   TRAIL CANVAS
+═══════════════════════════════════════════════════════════ */
+#trailcanvas{position:fixed;inset:0;width:100%;height:100%;z-index:9997;pointer-events:none}
+
+/* ═══════════════════════════════════════════════════════════
+   CHEMICAL FORMULA LAYER
+═══════════════════════════════════════════════════════════ */
+#chem-layer{position:fixed;inset:0;z-index:3;pointer-events:none;overflow:hidden}
+.cf-item{
+  position:absolute;
+  font-family:var(--serif);
+  font-size:clamp(.65rem,1.1vw,1rem);
+  color:var(--teal);
+  opacity:.05;
+  letter-spacing:.06em;
+  animation:cfDrift var(--dur,22s) var(--del,0s) ease-in-out infinite alternate;
+}
+@keyframes cfDrift{
+  0%{transform:translate(0,0) rotate(-5deg);opacity:.03}
+  50%{opacity:.08}
+  100%{transform:translate(var(--tx,18px),var(--ty,-12px)) rotate(4deg);opacity:.04}
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SUBMERGE OVERLAY
+═══════════════════════════════════════════════════════════ */
+#submerge-overlay{
+  position:fixed;inset:0;z-index:2;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 65%,rgba(0,217,163,.06) 0%,rgba(0,102,255,.04) 45%,transparent 75%);
+  opacity:0;transition:opacity 1.6s ease;
+}
+body.submerged #submerge-overlay{opacity:1}
+
+/* ═══════════════════════════════════════════════════════════
+   SCANLINES CRT OVERLAY
+═══════════════════════════════════════════════════════════ */
+#scanlines{
+  position:fixed;inset:0;z-index:8;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,0) 0px,rgba(0,0,0,0) 2px,rgba(0,0,0,.035) 2px,rgba(0,0,0,.035) 4px);
+  opacity:.55;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LOADER
+═══════════════════════════════════════════════════════════ */
+#loader{position:fixed;inset:0;background:#010608;z-index:9000;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2.2rem}
+.lo-brand{font-family:var(--serif);font-size:clamp(2.8rem,6vw,5rem);font-weight:300;letter-spacing:.28em;text-transform:uppercase;color:var(--text);opacity:0;transform:translateY(20px);text-shadow:0 0 40px rgba(0,217,163,.3)}
+.lo-sub{font-size:.72rem;letter-spacing:.22em;text-transform:uppercase;color:var(--t3);opacity:0}
+.lo-track{width:200px;height:1px;background:var(--bord);position:relative}
+.lo-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));width:0%;transition:width .05s linear;box-shadow:0 0 8px var(--teal)}
+.lo-pct{font-size:.68rem;letter-spacing:.14em;color:var(--t3);font-variant-numeric:tabular-nums}
+
+/* ═══════════════════════════════════════════════════════════
+   PERSISTENT BG CANVAS
+═══════════════════════════════════════════════════════════ */
+#bgcanvas{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+
+/* ═══════════════════════════════════════════════════════════
+   AUDIO BUTTON
+═══════════════════════════════════════════════════════════ */
+#audiobtn{position:fixed;bottom:2rem;right:2rem;z-index:400;width:42px;height:42px;border-radius:50%;background:rgba(4,12,24,.85);border:1px solid var(--bord);backdrop-filter:blur(8px);display:flex;align-items:center;justify-content:center;cursor:none;transition:border-color .2s,box-shadow .2s}
+#audiobtn:hover{border-color:rgba(0,217,163,.35);box-shadow:0 0 18px rgba(0,217,163,.18)}
+#audiobtn.on{border-color:rgba(0,217,163,.5);box-shadow:0 0 24px rgba(0,217,163,.25)}
+.audio-icon{font-size:1.1rem;pointer-events:none;user-select:none}
+
+/* ═══════════════════════════════════════════════════════════
+   HEADER
+═══════════════════════════════════════════════════════════ */
+header{position:fixed;top:0;left:0;right:0;height:var(--hh);z-index:500;display:flex;align-items:center;padding:0 2.5rem;justify-content:space-between;transition:background .4s,border-color .4s;border-bottom:1px solid transparent}
+header.sc{background:rgba(2,8,16,.9);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-color:var(--bord)}
+.h-brand{font-family:var(--serif);font-size:.92rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--text);cursor:none}
+.h-nav{display:flex;align-items:center;gap:.2rem}
+.h-nav a{padding:.38rem .85rem;font-size:.76rem;font-weight:500;letter-spacing:.04em;color:var(--t2);border-radius:6px;transition:color .2s,background .2s;cursor:none}
+.h-nav a:hover{color:var(--text);background:rgba(0,217,163,.06)}
+.h-cta{padding:.4rem 1.1rem;background:var(--teal-g);border:1px solid rgba(0,217,163,.25);border-radius:999px;font-size:.76rem;font-weight:600;color:var(--teal);cursor:none;transition:background .2s,box-shadow .2s}
+.h-cta:hover{background:rgba(0,217,163,.18);box-shadow:0 0 20px rgba(0,217,163,.2)}
+@media(max-width:680px){.h-nav{display:none};header{padding:0 1.25rem}}
+
+/* ═══════════════════════════════════════════════════════════
+   HERO
+═══════════════════════════════════════════════════════════ */
+#hero{position:relative;width:100%;height:100vh;min-height:640px;display:flex;align-items:center;justify-content:center;overflow:hidden;z-index:1}
+.h-vig{position:absolute;inset:0;background:radial-gradient(ellipse at center,transparent 25%,rgba(2,8,16,.8) 100%);pointer-events:none;z-index:1}
+.h-content{position:relative;z-index:2;text-align:center;padding:0 1.5rem;max-width:940px}
+.h-eyebrow{font-size:.68rem;font-weight:600;letter-spacing:.24em;text-transform:uppercase;color:var(--teal);margin-bottom:1.8rem;opacity:0;text-shadow:0 0 20px rgba(0,217,163,.5)}
+.h-title{font-family:var(--serif);font-size:clamp(4rem,10vw,9rem);font-weight:300;line-height:.9;letter-spacing:-.01em;color:var(--text);margin-bottom:2rem}
+.h-line{display:block;overflow:hidden}
+.h-line-inner{display:block;opacity:0;transform:translateY(110px)}
+.h-line em{font-style:italic;color:var(--amber)}
+.h-sub{font-size:clamp(.9rem,1.5vw,1.05rem);color:var(--t2);line-height:1.8;max-width:500px;margin:0 auto 3rem;font-weight:300;opacity:0}
+.h-actions{display:flex;align-items:center;justify-content:center;gap:1.5rem;opacity:0}
+.btn-p{padding:.9rem 2.4rem;background:var(--amber);color:#fff;font-size:.8rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;cursor:none;transition:box-shadow .3s;display:inline-block}
+.btn-p:hover{box-shadow:0 0 50px rgba(255,140,0,.55),0 10px 24px rgba(0,0,0,.4)}
+.btn-g{padding:.9rem 2rem;border:1px solid var(--bord);color:var(--t2);font-size:.8rem;font-weight:500;border-radius:999px;cursor:none;transition:border-color .2s,color .2s;display:inline-block}
+.btn-g:hover{border-color:rgba(0,217,163,.35);color:var(--text)}
+.scroll-hint{position:absolute;bottom:2.5rem;left:50%;transform:translateX(-50%);z-index:2;display:flex;flex-direction:column;align-items:center;gap:.6rem;opacity:0}
+.sh-text{font-size:.6rem;letter-spacing:.22em;text-transform:uppercase;color:var(--t3)}
+.sh-line{width:1px;height:52px;background:linear-gradient(to bottom,rgba(0,217,163,.4),transparent);animation:shpulse 2.2s ease-in-out infinite}
+@keyframes shpulse{0%{transform:scaleY(0);transform-origin:top;opacity:0}50%{transform:scaleY(1);transform-origin:top;opacity:1}100%{transform:scaleY(1);transform-origin:bottom;opacity:0}}
+.mag-wrap{display:inline-block;transition:transform .4s cubic-bezier(.23,1,.32,1)}
+
+/* ═══════════════════════════════════════════════════════════
+   AMD SCENE SECTION
+═══════════════════════════════════════════════════════════ */
+#amd-scene{height:280vh;position:relative;z-index:1}
+.amd-sticky{position:sticky;top:0;height:100vh;overflow:hidden}
+#amdcanvas{width:100%;height:100%;position:absolute;inset:0}
+.amd-overlay{position:absolute;inset:0;pointer-events:none;z-index:2}
+.amd-label{position:absolute;bottom:12%;left:5%;max-width:420px;transition:opacity .7s}
+.amd-label-stage{font-size:.62rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--teal);margin-bottom:.6rem;display:block;text-shadow:0 0 16px rgba(0,217,163,.5)}
+.amd-label-title{font-family:var(--serif);font-size:clamp(1.6rem,2.5vw,2.4rem);font-weight:300;color:var(--text);line-height:1.1;margin-bottom:.5rem}
+.amd-label-sub{font-size:.82rem;color:var(--t2);font-weight:300;line-height:1.6}
+.amd-hud{position:absolute;top:15%;right:4%;display:flex;flex-direction:column;align-items:flex-end;gap:.5rem}
+.hud-label{font-size:.58rem;letter-spacing:.2em;text-transform:uppercase;color:var(--t3)}
+.hud-val{font-family:var(--serif);font-size:2rem;font-weight:300;color:var(--amber);line-height:1;text-shadow:0 0 20px rgba(255,140,0,.4)}
+.hud-bar-wrap{width:80px;height:2px;background:rgba(0,217,163,.08);border-radius:1px;overflow:hidden}
+.hud-bar-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--amber));width:0%;transition:width .3s}
+.amd-section-label{position:absolute;top:6%;left:50%;transform:translateX(-50%);font-size:.62rem;letter-spacing:.22em;text-transform:uppercase;color:var(--t3);display:flex;align-items:center;gap:.75rem}
+.amd-section-label::before,.amd-section-label::after{content:'';display:block;width:24px;height:1px;background:var(--t3)}
+
+/* ═══════════════════════════════════════════════════════════
+   SHARED SECTION STYLES
+═══════════════════════════════════════════════════════════ */
+.sec{position:relative;z-index:1}
+.sec-inner{background:var(--surf);backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.container{max-width:var(--mw);margin:0 auto;padding:0 2.5rem}
+@media(max-width:640px){.container{padding:0 1.25rem}}
+.sec-label{font-size:.62rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--t3);display:flex;align-items:center;gap:.7rem}
+.sec-label::before{content:'';display:block;width:22px;height:1px;background:var(--t3)}
+.rule{height:1px;background:linear-gradient(90deg,transparent,var(--bord) 20%,var(--bord) 80%,transparent);max-width:var(--mw);margin:0 auto}
+.reveal{opacity:0;transform:translateY(46px)}
+h2{font-family:var(--serif);font-size:clamp(2.2rem,4vw,3.6rem);font-weight:300;line-height:1.1;letter-spacing:-.01em;color:var(--text)}
+h2 em{font-style:italic;color:var(--amber)}
+p{font-size:.92rem;line-height:1.78;color:var(--t2);font-weight:300;margin-bottom:.85rem}
+p:last-child{margin-bottom:0}
+p strong{color:var(--text);font-weight:500}
+ul{padding-left:1.2rem;margin-bottom:.85rem}
+li{font-size:.9rem;line-height:1.6;color:var(--t2);font-weight:300;margin-bottom:.3rem}
+li strong{color:var(--text);font-weight:500}
+
+/* ═══════════════════════════════════════════════════════════
+   MISSION
+═══════════════════════════════════════════════════════════ */
+#mission .sec-inner{padding:9rem 0 7rem}
+.mission-grid{display:grid;grid-template-columns:1fr 1fr;gap:6rem;align-items:center}
+@media(max-width:820px){.mission-grid{grid-template-columns:1fr;gap:4rem}}
+.m-heading{font-family:var(--serif);font-size:clamp(2.8rem,5vw,4.5rem);font-weight:300;line-height:1.05;letter-spacing:-.01em;color:var(--text);margin-top:1.4rem}
+.m-heading em{font-style:italic;color:var(--amber)}
+.m-body{font-size:.92rem;line-height:1.85;color:var(--t2);font-weight:300;margin-bottom:2.5rem}
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bord);border:1px solid var(--bord);border-radius:10px;overflow:hidden}
+.stat-box{background:var(--card);padding:1.6rem 1.2rem;text-align:center}
+.stat-n{font-family:var(--serif);font-size:2.8rem;font-weight:300;color:var(--teal);line-height:1;display:block;text-shadow:0 0 24px rgba(0,217,163,.35)}
+.stat-l{font-size:.64rem;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-top:.4rem;display:block}
+
+/* ═══════════════════════════════════════════════════════════
+   CHEMISTRY
+═══════════════════════════════════════════════════════════ */
+#chemistry .sec-inner{padding:8rem 0}
+.chem-intro{text-align:center;max-width:560px;margin:0 auto 5rem}
+.chem-sub{font-size:.9rem;color:var(--t2);margin-top:1rem;font-weight:300;line-height:1.7}
+.chem-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--bord);border:1px solid var(--bord);border-radius:var(--r);overflow:hidden}
+@media(max-width:900px){.chem-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.chem-grid{grid-template-columns:1fr}}
+.cc{background:var(--card);padding:2.4rem 1.8rem;position:relative;overflow:hidden;transition:background .3s;cursor:none}
+.cc:hover{background:rgba(5,14,28,.94)}
+.cc::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.cc.cf::before{background:var(--amber)}
+.cc.cg::before{background:var(--amber)}
+.cc.cw::before{background:var(--teal)}
+.cc.ce::before{background:var(--blue)}
+.cc-bg{position:absolute;bottom:-1rem;right:-.5rem;font-family:var(--serif);font-size:5.5rem;font-weight:700;opacity:.04;color:#fff;user-select:none;pointer-events:none;line-height:1}
+.cc-sym{font-family:var(--serif);font-size:2.6rem;font-weight:600;line-height:1;margin-bottom:.35rem}
+.cf .cc-sym{color:var(--amber)}.cg .cc-sym{color:var(--amber)}.cw .cc-sym{color:var(--teal)}.ce .cc-sym{color:var(--blue)}
+.cc-name{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--t3);margin-bottom:1.4rem;font-weight:500}
+.cc-val{font-family:var(--serif);font-size:1.45rem;font-weight:300;color:var(--text);margin-bottom:.2rem}
+.cc-unit{font-size:.7rem;color:var(--t3);margin-bottom:1.2rem}
+.cc-bar{height:2px;background:rgba(255,255,255,.05);border-radius:1px;overflow:hidden}
+.cc-fill{height:100%;width:0%;border-radius:1px;transition:width 1.3s cubic-bezier(.4,0,.2,1)}
+.cf .cc-fill{background:var(--amber)}.cg .cc-fill{background:var(--amber)}.cw .cc-fill{background:var(--teal)}.ce .cc-fill{background:var(--blue)}
+/* gauge canvas inside each card */
+.gauge-canvas{position:absolute;top:1.1rem;right:1.1rem;width:52px;height:52px;opacity:.7}
+
+/* ═══════════════════════════════════════════════════════════
+   MAP
+═══════════════════════════════════════════════════════════ */
+#map-sec .sec-inner{padding:8rem 0}
+.map-intro{display:flex;align-items:flex-end;justify-content:space-between;gap:2rem;margin-bottom:2.5rem;flex-wrap:wrap}
+.map-disp-title{font-family:var(--serif);font-size:clamp(3rem,6vw,5.5rem);font-weight:300;line-height:.95;letter-spacing:-.01em;color:var(--text)}
+.map-disp-title em{font-style:italic;color:var(--teal)}
+.map-tagline{font-size:.85rem;color:var(--t2);font-weight:300;max-width:300px;line-height:1.65;margin-top:.8rem}
+.map-chips{display:flex;flex-wrap:wrap;gap:.4rem;align-items:flex-end}
+.mc{padding:.28rem .75rem;border-radius:999px;font-size:.68rem;font-weight:600;letter-spacing:.06em;text-transform:uppercase;border:1px solid}
+.mc-f{background:rgba(255,140,0,.08);color:var(--amber);border-color:rgba(255,140,0,.22)}
+.mc-w{background:rgba(0,217,163,.06);color:var(--teal);border-color:rgba(0,217,163,.2)}
+.mc-e{background:rgba(0,102,255,.06);color:var(--blue);border-color:rgba(0,102,255,.18)}
+.mc-m{background:rgba(255,255,255,.04);color:var(--t3);border-color:var(--bord)}
+.map-frame{border-radius:16px;overflow:hidden;border:1px solid rgba(0,217,163,.18);box-shadow:0 0 0 1px rgba(0,217,163,.06),0 0 80px rgba(0,217,163,.08),0 0 160px rgba(0,102,255,.04),0 40px 100px rgba(0,0,0,.7);background:#030c18}
+.map-topbar{display:flex;align-items:center;justify-content:space-between;padding:.8rem 1.2rem;background:rgba(2,8,16,.92);border-bottom:1px solid var(--bord)}
+.map-tb-l{display:flex;align-items:center;gap:.6rem}
+.live-dot{width:7px;height:7px;border-radius:50%;background:var(--teal);box-shadow:0 0 10px var(--teal);animation:blink 2.5s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.25}}
+.map-tb-title{font-size:.7rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--t2)}
+/* iframe wrapper for scan line */
+.map-iframe-wrap{position:relative;overflow:hidden}
+.map-iframe{width:100%;height:clamp(540px,74vh,840px);border:none;display:block}
+.map-scanline{position:absolute;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent 0%,var(--teal) 30%,rgba(0,255,204,.9) 50%,var(--teal) 70%,transparent 100%);box-shadow:0 0 14px rgba(0,217,163,.8),0 0 28px rgba(0,217,163,.4);pointer-events:none;z-index:5;animation:mapscan 4s ease-in-out infinite}
+@keyframes mapscan{0%{top:-2px;opacity:0}4%{opacity:1}96%{opacity:.6}100%{top:100%;opacity:0}}
+.map-botbar{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1.2rem;background:rgba(2,8,16,.88);border-top:1px solid var(--bord);flex-wrap:wrap;gap:.6rem}
+.map-legend{display:flex;gap:1.2rem;flex-wrap:wrap}
+.leg-item{display:flex;align-items:center;gap:.38rem;font-size:.68rem;color:var(--t2)}
+.leg-sw{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+.map-credit{font-size:.66rem;color:var(--t3);letter-spacing:.04em}
+
+/* ═══════════════════════════════════════════════════════════
+   REE
+═══════════════════════════════════════════════════════════ */
+#ree .sec-inner{padding:8rem 0}
+.ree-layout{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start}
+@media(max-width:820px){.ree-layout{grid-template-columns:1fr;gap:3rem}}
+.ree-h{font-family:var(--serif);font-size:clamp(2.4rem,4.5vw,3.8rem);font-weight:300;line-height:1.08;color:var(--text);margin-top:1.3rem;margin-bottom:1.5rem}
+.ree-h em{font-style:italic;color:var(--blue)}
+.ree-callout{margin-top:1.5rem;padding:1.2rem 1.4rem;background:rgba(0,102,255,.06);border:1px solid rgba(0,102,255,.16);border-radius:var(--r);font-size:.84rem;color:var(--t2);line-height:1.7;font-weight:300}
+.ree-callout strong{color:var(--blue);font-weight:500}
+.ree-els{display:grid;grid-template-columns:repeat(5,1fr);gap:.45rem}
+.re{background:rgba(0,102,255,.05);border:1px solid rgba(0,102,255,.1);border-radius:8px;padding:.85rem .3rem;text-align:center;cursor:none;transition:background .22s,border-color .22s,transform .22s,box-shadow .22s}
+.re:hover{background:rgba(0,102,255,.12);border-color:rgba(0,102,255,.3);transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,102,255,.12)}
+.re-s{display:block;font-family:var(--serif);font-size:1.4rem;font-weight:600;color:var(--blue);line-height:1}
+.re-n{display:block;font-size:.5rem;letter-spacing:.06em;color:var(--t3);margin-top:.2rem;text-transform:uppercase}
+.re-p{display:none;font-size:.56rem;color:var(--blue);margin-top:.18rem}
+.re:hover .re-p{display:block}
+
+/* ═══════════════════════════════════════════════════════════
+   DATA
+═══════════════════════════════════════════════════════════ */
+#data .sec-inner{padding:8rem 0}
+.data-hdr{text-align:center;max-width:560px;margin:0 auto 4rem}
+.data-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bord);border:1px solid var(--bord);border-radius:var(--r);overflow:hidden;margin-bottom:5rem}
+@media(max-width:820px){.data-grid{grid-template-columns:1fr}}
+.dc{background:var(--card);padding:2.2rem 2rem;transition:background .25s;cursor:none}
+.dc:hover{background:rgba(5,14,28,.96)}
+.dc-icon{width:26px;height:26px;margin-bottom:1.2rem;display:block;color:var(--teal);flex-shrink:0}
+.dc-icon svg{width:100%;height:100%;display:block}
+.dc-name{font-family:var(--serif);font-size:1.28rem;font-weight:400;color:var(--text);margin-bottom:.55rem}
+.dc-desc{font-size:.8rem;color:var(--t2);line-height:1.65;font-weight:300;margin-bottom:.85rem}
+.dc-fmts{display:flex;gap:.3rem;flex-wrap:wrap}
+.ftag{padding:.12rem .5rem;border-radius:4px;font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(0,217,163,.05);color:var(--t3);border:1px solid var(--bord)}
+
+/* ═══════════════════════════════════════════════════════════
+   ACKNOWLEDGEMENTS
+═══════════════════════════════════════════════════════════ */
+#ack .sec-inner{padding:8rem 0 10rem}
+.ack-top{display:grid;grid-template-columns:1fr 1fr;gap:5rem;margin-bottom:5rem;align-items:end}
+@media(max-width:820px){.ack-top{grid-template-columns:1fr;gap:3rem}}
+.ack-h{font-family:var(--serif);font-size:clamp(3rem,6vw,5.5rem);font-weight:300;line-height:1;letter-spacing:-.01em;color:var(--text);margin-top:1.3rem}
+.ack-h em{font-style:italic;color:var(--t2)}
+.ack-statement{font-family:var(--serif);font-size:1.2rem;font-style:italic;font-weight:300;color:var(--t2);line-height:1.7;max-width:440px}
+.ack-rule{height:1px;background:linear-gradient(90deg,var(--bord),transparent 70%);margin-bottom:4rem}
+.ack-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3rem}
+@media(max-width:820px){.ack-grid{grid-template-columns:1fr;gap:2.5rem}}
+.ack-col-title{font-size:.65rem;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--teal);margin-bottom:1.4rem;display:flex;align-items:center;gap:.6rem}
+.ack-col-title::before{content:'';display:block;width:18px;height:1px;background:var(--teal)}
+.ack-list{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:.75rem}
+.ack-list li{font-family:var(--serif);font-size:1.05rem;font-weight:400;color:var(--t2);line-height:1.4;padding-bottom:.75rem;border-bottom:1px solid var(--bord)}
+.ack-list li:last-child{border-bottom:none}
+.ack-list span{display:block;font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--t3);margin-top:.2rem;font-family:var(--sans);font-weight:400}
+.ack-closing{margin-top:5rem;padding-top:2.5rem;border-top:1px solid var(--bord);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1.5rem}
+.ack-closing-text{font-family:var(--serif);font-size:1rem;font-style:italic;font-weight:300;color:var(--t3);max-width:600px;line-height:1.7}
+
+/* ═══════════════════════════════════════════════════════════
+   GRAND CHALLENGES / TEAM
+═══════════════════════════════════════════════════════════ */
+#team .sec-inner{padding:8rem 0}
+.gc-banner{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid rgba(0,217,163,.18);box-shadow:0 0 80px rgba(0,217,163,.08),0 32px 80px rgba(0,0,0,.6);margin-bottom:5rem}
+.gc-banner img{width:100%;height:clamp(280px,42vh,520px);object-fit:cover;object-position:center 30%;display:block;filter:grayscale(30%) brightness(.6) contrast(1.1);transition:filter .6s}
+.gc-banner:hover img{filter:grayscale(15%) brightness(.7) contrast(1.05)}
+.gc-banner-overlay{position:absolute;inset:0;background:linear-gradient(105deg,rgba(2,8,16,.88) 0%,rgba(2,8,16,.45) 55%,rgba(2,8,16,.7) 100%);pointer-events:none}
+.gc-banner-content{position:absolute;top:50%;left:5%;transform:translateY(-50%);max-width:540px}
+.gc-banner-tag{font-size:.62rem;font-weight:700;letter-spacing:.22em;text-transform:uppercase;color:var(--teal);display:flex;align-items:center;gap:.6rem;margin-bottom:1rem}
+.gc-banner-tag::before{content:'';display:block;width:20px;height:1px;background:var(--teal)}
+.gc-banner-title{font-family:var(--serif);font-size:clamp(1.9rem,3.5vw,3.2rem);font-weight:300;line-height:1.05;color:var(--text);letter-spacing:-.01em;margin-bottom:.75rem}
+.gc-banner-title em{font-style:italic;color:var(--teal)}
+.gc-banner-sub{font-size:.88rem;color:var(--t2);font-weight:300;line-height:1.65;max-width:400px}
+.gc-banner-badge{position:absolute;top:50%;right:5%;transform:translateY(-50%);text-align:right}
+.gc-banner-inst{font-family:var(--serif);font-size:1.15rem;font-weight:300;color:rgba(255,255,255,.5);letter-spacing:.06em}
+.gc-banner-inst strong{display:block;color:rgba(255,255,255,.8);font-weight:400;font-size:1.4rem;letter-spacing:.04em}
+.gc-narrative{display:grid;grid-template-columns:1fr 1fr;gap:5rem;align-items:start;margin-bottom:5rem}
+@media(max-width:820px){.gc-narrative{grid-template-columns:1fr;gap:3rem}}
+.gc-nar-heading{font-family:var(--serif);font-size:clamp(2.2rem,3.8vw,3.4rem);font-weight:300;line-height:1.08;color:var(--text);margin-top:1.3rem}
+.gc-nar-heading em{font-style:italic;color:var(--teal)}
+.advisor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--bord);border:1px solid var(--bord);border-radius:var(--r);overflow:hidden;margin-top:1px}
+@media(max-width:720px){.advisor-grid{grid-template-columns:1fr}}
+.adv-card{background:var(--card);padding:1.8rem 1.6rem;position:relative;overflow:hidden;transition:background .25s;cursor:none}
+.adv-card:hover{background:rgba(5,14,28,.97)}
+.adv-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.adv-card.gt::before{background:linear-gradient(90deg,#b3a369,#daa520)}
+.adv-card.wvu::before{background:linear-gradient(90deg,#003082,#eaa30b)}
+.adv-card.collab::before{background:var(--teal)}
+.adv-inst-tag{font-size:.62rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;margin-bottom:.9rem;display:inline-flex;align-items:center;gap:.45rem;padding:.18rem .6rem;border-radius:999px;border:1px solid}
+.adv-card.gt .adv-inst-tag{color:#c9a227;border-color:rgba(201,162,39,.3);background:rgba(201,162,39,.07)}
+.adv-card.wvu .adv-inst-tag{color:#7a9fd4;border-color:rgba(122,159,212,.3);background:rgba(122,159,212,.07)}
+.adv-card.collab .adv-inst-tag{color:var(--teal);border-color:rgba(0,217,163,.25);background:var(--teal-g)}
+.adv-name{font-family:var(--serif);font-size:1.25rem;font-weight:400;color:var(--text);line-height:1.2;margin-bottom:.35rem}
+.adv-title{font-size:.72rem;letter-spacing:.06em;color:var(--t3);margin-bottom:.9rem;font-weight:400;text-transform:uppercase}
+.adv-desc{font-size:.82rem;color:var(--t2);line-height:1.65;font-weight:300}
+.adv-bg-letter{position:absolute;bottom:-.5rem;right:.5rem;font-family:var(--serif);font-size:5rem;font-weight:700;opacity:.035;color:#fff;pointer-events:none;user-select:none;line-height:1}
+.team-photo-wrap{position:relative;border-radius:var(--r);overflow:hidden;border:1px solid var(--bord);box-shadow:0 32px 80px rgba(0,0,0,.65),0 0 0 1px rgba(0,217,163,.04);margin-top:5rem}
+.team-photo-wrap img{width:100%;height:clamp(320px,50vh,600px);object-fit:cover;object-position:center 20%;display:block;filter:grayscale(20%) brightness(.72) contrast(1.08);transition:filter .6s}
+.team-photo-wrap:hover img{filter:grayscale(10%) brightness(.82) contrast(1.05)}
+.team-photo-gradient{position:absolute;bottom:0;left:0;right:0;height:55%;background:linear-gradient(transparent,rgba(2,8,16,.92));pointer-events:none}
+.team-photo-caption{position:absolute;bottom:0;left:0;right:0;padding:2rem 2.5rem;display:flex;align-items:flex-end;justify-content:space-between;flex-wrap:wrap;gap:1rem}
+.team-caption-left{font-family:var(--serif);font-size:1.5rem;font-weight:300;color:var(--text);line-height:1.2}
+.team-caption-left span{display:block;font-size:.68rem;font-family:var(--sans);font-weight:400;letter-spacing:.14em;text-transform:uppercase;color:var(--t3);margin-bottom:.3rem}
+.team-caption-right{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--t3)}
+
+/* ═══════════════════════════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════════════════════════ */
+footer{border-top:1px solid var(--bord);padding:2rem 2.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:1rem;position:relative;z-index:1;background:var(--surf)}
+.ft-l{font-family:var(--serif);font-size:.9rem;font-weight:300;color:var(--t3)}
+.ft-l strong{color:var(--t2);font-weight:400}
+.ft-r{display:flex;gap:1.5rem}
+.ft-r a{font-size:.74rem;color:var(--t3);cursor:none;transition:color .2s}
+.ft-r a:hover{color:var(--t2)}
+
+/* ═══════════════════════════════════════════════════════════
+   FINAL CTA
+═══════════════════════════════════════════════════════════ */
+.fcta{text-align:center;padding:6rem 2rem;position:relative;overflow:hidden}
+.fcta::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,217,163,.06) 0%,transparent 65%);pointer-events:none}
+.fcta-eyebrow{font-size:.64rem;letter-spacing:.22em;text-transform:uppercase;color:var(--t3);margin-bottom:1.5rem}
+.fcta-title{font-family:var(--serif);font-size:clamp(2.8rem,5vw,4.8rem);font-weight:300;line-height:1.05;color:var(--text);margin-bottom:2.5rem}
+.fcta-title em{font-style:italic;color:var(--teal)}
+.fcta-btn{display:inline-flex;align-items:center;gap:.75rem;padding:1rem 2.8rem;background:var(--teal);color:#020810;font-size:.8rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;cursor:none;transition:box-shadow .35s,transform .25s}
+.fcta-btn:hover{box-shadow:0 0 60px rgba(0,217,163,.5),0 14px 32px rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+
+<!-- cursor -->
+<div id="cdot"></div>
+<div id="cring"></div>
+
+<!-- cursor glow trail -->
+<canvas id="trailcanvas"></canvas>
+
+<!-- floating chemical formulas -->
+<div id="chem-layer">
+  <span class="cf-item" style="left:11vw;top:18vh;--dur:22s;--del:0s;--tx:14px;--ty:-10px">FeS₂</span>
+  <span class="cf-item" style="left:78vw;top:9vh;--dur:28s;--del:3s;--tx:-18px;--ty:12px">H₂SO₄</span>
+  <span class="cf-item" style="left:45vw;top:64vh;--dur:19s;--del:7s;--tx:10px;--ty:-16px">Fe²⁺</span>
+  <span class="cf-item" style="left:87vw;top:43vh;--dur:25s;--del:1s;--tx:-12px;--ty:8px">SO₄²⁻</span>
+  <span class="cf-item" style="left:7vw;top:55vh;--dur:31s;--del:5s;--tx:20px;--ty:-8px">H⁺</span>
+  <span class="cf-item" style="left:62vw;top:31vh;--dur:17s;--del:9s;--tx:-8px;--ty:14px">Al³⁺</span>
+  <span class="cf-item" style="left:29vw;top:82vh;--dur:23s;--del:2s;--tx:16px;--ty:-12px">REE</span>
+  <span class="cf-item" style="left:54vw;top:14vh;--dur:20s;--del:6s;--tx:-10px;--ty:10px">La</span>
+  <span class="cf-item" style="left:20vw;top:41vh;--dur:27s;--del:4s;--tx:12px;--ty:-18px">Ce</span>
+  <span class="cf-item" style="left:91vw;top:72vh;--dur:24s;--del:8s;--tx:-14px;--ty:8px">Nd</span>
+</div>
+
+<!-- submerge color overlay -->
+<div id="submerge-overlay"></div>
+
+<!-- CRT scanlines -->
+<div id="scanlines"></div>
+
+<!-- loader -->
+<div id="loader">
+  <div class="lo-brand">WV AMD</div>
+  <div class="lo-sub">An Atlas of Environmental Legacy</div>
+  <div class="lo-track"><div class="lo-fill" id="lofill"></div></div>
+  <div class="lo-pct" id="lopct">0%</div>
+</div>
+
+<!-- persistent three.js bg -->
+<canvas id="bgcanvas"></canvas>
+
+<!-- audio toggle -->
+<div id="audiobtn" onclick="toggleAudio()">
+  <span class="audio-icon" id="audioicon">♪</span>
+</div>
+
+<!-- header -->
+<header id="siteheader">
+  <a class="h-brand" href="#">WV AMD &amp; REE</a>
+  <nav class="h-nav">
+    <a href="#mission">Mission</a>
+    <a href="#amd-scene">The Scene</a>
+    <a href="#map-sec">Map</a>
+    <a href="#ree">Rare Earths</a>
+    <a href="#team">The Team</a>
+    <a href="#data" class="h-cta">Data →</a>
+  </nav>
+</header>
+
+<!-- ════════════════════════════════════════ HERO -->
+<section id="hero">
+  <div class="h-vig"></div>
+  <div class="h-content">
+    <div class="h-eyebrow">Experimental Atlas · West Virginia · Appalachian Coalfields</div>
+    <h1 class="h-title">
+      <span class="h-line"><span class="h-line-inner">Acid</span></span>
+      <span class="h-line"><span class="h-line-inner"><em>Mine</em></span></span>
+      <span class="h-line"><span class="h-line-inner">Drainage</span></span>
+    </h1>
+    <p class="h-sub">
+      A living record of where West Virginia's coal country left
+      its chemistry in the water — and where that same legacy
+      holds elements worth recovering.
+    </p>
+    <div class="h-actions">
+      <div class="mag-wrap"><a href="#amd-scene" class="btn-p">Enter the Scene</a></div>
+      <div class="mag-wrap"><a href="#map-sec" class="btn-g">View the Map</a></div>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span class="sh-text">Scroll to explore</span>
+    <div class="sh-line"></div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ AMD SCENE -->
+<section id="amd-scene">
+  <div class="amd-sticky">
+    <canvas id="amdcanvas"></canvas>
+    <div class="amd-overlay">
+      <div class="amd-section-label">Environmental Simulation · Scroll to Advance</div>
+      <div class="amd-label" id="amdlabel">
+        <span class="amd-label-stage" id="amdstage">West Virginia · Legacy Landscape</span>
+        <div class="amd-label-title" id="amdtitle">An abandoned coal operation<br>and the watershed it left behind</div>
+        <div class="amd-label-sub" id="amdsub">Decades after mining ceased, the chemistry persists.</div>
+      </div>
+      <div class="amd-hud">
+        <span class="hud-label">AMD Index</span>
+        <span class="hud-val" id="hudval">0.00</span>
+        <div class="hud-bar-wrap"><div class="hud-bar-fill" id="hudbar"></div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ MISSION -->
+<section id="mission" class="sec">
+  <div class="sec-inner">
+    <div class="container">
+      <div class="mission-grid">
+        <div class="reveal">
+          <div class="sec-label">01 — Mission</div>
+          <h2 class="m-heading" style="margin-top:1.4rem">
+            The ground beneath<br>Appalachia hides<br>a <em>chemical legacy</em>
+          </h2>
+        </div>
+        <div>
+          <p class="m-body reveal">When sulfide minerals are exposed to oxygen and water during coal extraction, they produce sulfuric acid. That acid dissolves metals, kills aquatic life, and continues flowing into streams for centuries after mines close.</p>
+          <p class="m-body reveal">West Virginia — the heart of the Appalachian coalfields — carries more documented acid mine drainage than almost anywhere on Earth. This atlas surfaces that damage: where it is, how severe it is, and what else it might contain.</p>
+          <div class="stats-row reveal">
+            <div class="stat-box"><span class="stat-n" data-target="500">0</span><span class="stat-l">Monitoring sites</span></div>
+            <div class="stat-box"><span class="stat-n" data-target="5">0</span><span class="stat-l">AMD parameters</span></div>
+            <div class="stat-box"><span class="stat-n" data-target="100">0</span><span class="stat-l">Years of record</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ CHEMISTRY -->
+<section id="chemistry" class="sec">
+  <div class="sec-inner">
+    <div class="container">
+      <div class="chem-intro reveal">
+        <div class="sec-label" style="justify-content:center">02 — Chemical signatures</div>
+        <h2 style="margin-top:1.25rem">Four numbers<br>that tell the story</h2>
+        <p class="chem-sub">AMD is a chemical cascade. These four measurements define the damage — and the opportunity.</p>
+      </div>
+      <div class="chem-grid reveal">
+        <div class="cc cf">
+          <canvas class="gauge-canvas" width="80" height="80"></canvas>
+          <div class="cc-bg">pH</div><div class="cc-sym">pH</div>
+          <div class="cc-name">Acidity</div>
+          <div class="cc-val">2 – 6</div>
+          <div class="cc-unit">Standard units · Normal streams 6.5–8.5</div>
+          <div class="cc-bar"><div class="cc-fill" data-w="82"></div></div>
+        </div>
+        <div class="cc cg">
+          <canvas class="gauge-canvas" width="80" height="80"></canvas>
+          <div class="cc-bg">SO₄</div><div class="cc-sym">SO₄²⁻</div>
+          <div class="cc-name">Sulfate</div>
+          <div class="cc-val">&gt; 1,000 mg/L</div>
+          <div class="cc-unit">Pyrite oxidation product · EPA limit 250 mg/L</div>
+          <div class="cc-bar"><div class="cc-fill" data-w="76"></div></div>
+        </div>
+        <div class="cc cw">
+          <canvas class="gauge-canvas" width="80" height="80"></canvas>
+          <div class="cc-bg">Fe</div><div class="cc-sym">Fe / Al</div>
+          <div class="cc-name">Dissolved metals</div>
+          <div class="cc-val">Tens–hundreds mg/L</div>
+          <div class="cc-unit">Orange "yellowboy" visible above 0.3 mg/L</div>
+          <div class="cc-bar"><div class="cc-fill" data-w="66"></div></div>
+        </div>
+        <div class="cc ce">
+          <canvas class="gauge-canvas" width="80" height="80"></canvas>
+          <div class="cc-bg">REE</div><div class="cc-sym">REE</div>
+          <div class="cc-name">Rare earths in sludge</div>
+          <div class="cc-val">10 – 1,000+ ppm</div>
+          <div class="cc-unit">Recovery-grade in select Appalachian basins</div>
+          <div class="cc-bar"><div class="cc-fill" data-w="43"></div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ MAP -->
+<section id="map-sec" class="sec">
+  <div class="sec-inner">
+    <div class="container">
+      <div class="map-intro reveal">
+        <div>
+          <div class="sec-label">03 — The living atlas</div>
+          <h2 class="map-disp-title" style="margin-top:1.25rem">The <em>map</em><br>is the story</h2>
+          <p class="map-tagline">USGS live data, NHDPlus streams, HUC12 watersheds — one interactive layer over the entire state.</p>
+        </div>
+        <div class="map-chips">
+          <span class="mc mc-f">AMD Severity</span>
+          <span class="mc mc-w">Monitoring Sites</span>
+          <span class="mc mc-e">REE Potential</span>
+          <span class="mc mc-m">NHDPlus Streams</span>
+          <span class="mc mc-m">HUC12 Watersheds</span>
+        </div>
+      </div>
+      <div class="map-frame reveal">
+        <div class="map-topbar">
+          <div class="map-tb-l"><span class="live-dot"></span><span class="map-tb-title">AMD &amp; REE Monitoring — West Virginia</span></div>
+          <span style="font-size:.66rem;color:var(--t3);letter-spacing:.06em">ArcGIS Online · AMD_REE_Portal</span>
+        </div>
+        <div class="map-iframe-wrap">
+          <iframe class="map-iframe" src="https://gtmaps.maps.arcgis.com/apps/mapviewer/index.html?webmap=e779b9c375d9411da565e29c6fb1f0c2" loading="lazy" title="AMD &amp; REE Monitoring Sites — West Virginia" allow="geolocation"></iframe>
+          <div class="map-scanline"></div>
+        </div>
+        <div class="map-botbar">
+          <div class="map-legend">
+            <div class="leg-item"><span class="leg-sw" style="background:var(--amber);opacity:.85"></span>AMD-impacted reaches</div>
+            <div class="leg-item"><span class="leg-sw" style="background:var(--teal);border-radius:50%;opacity:.85"></span>Monitoring stations</div>
+            <div class="leg-item"><span class="leg-sw" style="background:var(--blue);opacity:.85"></span>REE-potential zones</div>
+            <div class="leg-item"><span class="leg-sw" style="background:var(--t3);opacity:.5"></span>HUC12 boundaries</div>
+          </div>
+          <span class="map-credit">CC BY 4.0 · USGS · EPA WQP · ArcGIS Living Atlas</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ REE -->
+<section id="ree" class="sec">
+  <div class="sec-inner">
+    <div class="container">
+      <div class="ree-layout">
+        <div>
+          <div class="sec-label reveal">04 — Rare earth recovery</div>
+          <h2 class="ree-h reveal">Pollution<br>as <em>resource</em></h2>
+          <p class="reveal">AMD treatment sludge concentrates rare earth elements as they co-precipitate with iron and aluminum hydroxides. Some Appalachian AMD systems produce sludge at ore-comparable REE grades.</p>
+          <p class="reveal">Low pH keeps REEs mobile in AMD water. When pH rises during treatment, they bind to iron floc — which means existing treatment plants are already intercepting the REE-bearing flux.</p>
+          <div class="ree-callout reveal"><strong>At-source recovery:</strong> AMD treatment infrastructure, built as pollution control, can double as a critical-mineral concentrator — converting a century-long liability into a REE asset.</div>
+        </div>
+        <div class="reveal">
+          <div class="sec-label" style="margin-bottom:1.4rem">Target elements</div>
+          <div class="ree-els">
+            <div class="re"><span class="re-s">La</span><span class="re-n">Lanthanum</span><span class="re-p">~12 ppm</span></div>
+            <div class="re"><span class="re-s">Ce</span><span class="re-n">Cerium</span><span class="re-p">~24 ppm</span></div>
+            <div class="re"><span class="re-s">Pr</span><span class="re-n">Praseodymium</span><span class="re-p">~3 ppm</span></div>
+            <div class="re"><span class="re-s">Nd</span><span class="re-n">Neodymium</span><span class="re-p">~10 ppm</span></div>
+            <div class="re"><span class="re-s">Sm</span><span class="re-n">Samarium</span><span class="re-p">~2 ppm</span></div>
+            <div class="re"><span class="re-s">Eu</span><span class="re-n">Europium</span><span class="re-p">~0.4 ppm</span></div>
+            <div class="re"><span class="re-s">Gd</span><span class="re-n">Gadolinium</span><span class="re-p">~2 ppm</span></div>
+            <div class="re"><span class="re-s">Dy</span><span class="re-n">Dysprosium</span><span class="re-p">~2 ppm</span></div>
+            <div class="re"><span class="re-s">Y</span><span class="re-n">Yttrium</span><span class="re-p">~8 ppm</span></div>
+            <div class="re"><span class="re-s">Sc</span><span class="re-n">Scandium</span><span class="re-p">~4 ppm</span></div>
+          </div>
+          <p style="font-size:.68rem;color:var(--t3);margin-top:.8rem;line-height:1.6;font-weight:300">Indicative concentrations in AMD sludge from published Appalachian studies. Hover to reveal values.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ DATA -->
+<section id="data" class="sec">
+  <div class="sec-inner">
+    <div class="container">
+      <div class="data-hdr reveal">
+        <div class="sec-label" style="justify-content:center">05 — Open data</div>
+        <h2 style="margin-top:1.25rem">Every layer,<br>freely available</h2>
+        <p style="margin-top:1rem;font-size:.9rem;color:var(--t2);font-weight:300;line-height:1.7">All layers published under CC BY 4.0 via ArcGIS Online. Export CSV, Shapefile, or GeoJSON from the map viewer.</p>
+      </div>
+      <div class="data-grid reveal">
+        <div class="dc">
+          <span class="dc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3h8M9 3v7L4.5 17A2 2 0 0 0 6.4 20h11.2a2 2 0 0 0 1.9-3L15 10V3"/><path d="M7.5 17h5" stroke-opacity=".45"/><path d="M7 14.5h3" stroke-opacity=".35"/></svg></span>
+          <div class="dc-name">Water Quality Points</div><div class="dc-desc">Site-level AMD chemistry — pH, sulfate, iron, conductance, alkalinity from USGS and WQP.</div><div class="dc-fmts"><span class="ftag">CSV</span><span class="ftag">SHP</span><span class="ftag">GeoJSON</span></div>
+        </div>
+        <div class="dc">
+          <span class="dc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l9 7-9 13L3 9z"/><line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="15.5" r=".9" fill="currentColor" stroke="none"/></svg></span>
+          <div class="dc-name">AMD Severity Layer</div><div class="dc-desc">Stream-reach polygons scored 0–100 for AMD severity based on chemistry thresholds and flow data.</div><div class="dc-fmts"><span class="ftag">SHP</span><span class="ftag">GeoJSON</span><span class="ftag">FGDB</span></div>
+        </div>
+        <div class="dc">
+          <span class="dc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12,3 20,7.5 20,16.5 12,21 4,16.5 4,7.5"/><polygon points="12,8.5 16,10.75 16,15.25 12,17.5 8,15.25 8,10.75" stroke-opacity=".38"/><line x1="12" y1="3" x2="12" y2="8.5" stroke-opacity=".28"/><line x1="20" y1="7.5" x2="16" y2="10.75" stroke-opacity=".28"/><line x1="20" y1="16.5" x2="16" y2="15.25" stroke-opacity=".28"/><line x1="12" y1="21" x2="12" y2="17.5" stroke-opacity=".28"/><line x1="4" y1="16.5" x2="8" y2="15.25" stroke-opacity=".28"/><line x1="4" y1="7.5" x2="8" y2="10.75" stroke-opacity=".28"/></svg></span>
+          <div class="dc-name">REE Potential Zones</div><div class="dc-desc">Watershed-level REE potential derived from AMD chemistry proxies and treatment-site proximity.</div><div class="dc-fmts"><span class="ftag">SHP</span><span class="ftag">GeoJSON</span></div>
+        </div>
+        <div class="dc">
+          <span class="dc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21v-9"/><path d="M12 12C10 10 7.5 10 5.5 8"/><path d="M12 12C14 10 16.5 10 18.5 8"/><path d="M5.5 8C4.5 6.5 4 5 4.5 3"/><path d="M5.5 8C7 6.5 7.5 5 7 3"/><path d="M18.5 8C17.5 6.5 17 5 17.5 3"/><path d="M18.5 8C20 6.5 20.5 5 20 3"/></svg></span>
+          <div class="dc-name">HUC12 Watersheds</div><div class="dc-desc">WBD HUC12 sub-watersheds for West Virginia with AMD severity aggregates attached.</div><div class="dc-fmts"><span class="ftag">SHP</span><span class="ftag">GeoJSON</span></div>
+        </div>
+        <div class="dc">
+          <span class="dc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="2,12 5,12 6.5,7 8.5,17 10.5,10 12.5,14 14.5,12 22,12"/><circle cx="21.2" cy="12" r="1.4" fill="currentColor" stroke="none" opacity=".7"/></svg></span>
+          <div class="dc-name">USGS Live Stations</div><div class="dc-desc">Real-time OGC API — site metadata, latest continuous values, daily aggregates via USGS Water Data.</div><div class="dc-fmts"><span class="ftag">OGC API</span><span class="ftag">JSON</span></div>
+        </div>
+        <div class="dc">
+          <span class="dc-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="20" x2="3" y2="4" stroke-opacity=".3"/><line x1="3" y1="20" x2="21" y2="20" stroke-opacity=".3"/><polyline points="5,16 8,11 12,13 16,7 20,9"/><circle cx="8" cy="11" r="1.3" fill="currentColor" stroke="none"/><circle cx="12" cy="13" r="1.3" fill="currentColor" stroke="none"/><circle cx="16" cy="7" r="1.3" fill="currentColor" stroke="none"/></svg></span>
+          <div class="dc-name">Time-Series Values</div><div class="dc-desc">15-minute and daily sensor records for pH, conductance, and sulfate across all active stations.</div><div class="dc-fmts"><span class="ftag">OGC API</span><span class="ftag">CSV</span></div>
+        </div>
+      </div>
+      <div class="fcta reveal">
+        <div class="fcta-eyebrow">West Virginia AMD &amp; REE Atlas</div>
+        <h2 class="fcta-title">The atlas is <em>open.</em><br>The data is live.</h2>
+        <div class="mag-wrap"><a href="#map-sec" class="fcta-btn">Open the Map <span>→</span></a></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ TEAM / GRAND CHALLENGES -->
+<section id="team" class="sec">
+  <div class="sec-inner">
+    <div class="container">
+      <div class="gc-banner reveal">
+        <img src="GC.jpg" alt="Georgia Tech Grand Challenges Program"/>
+        <div class="gc-banner-overlay"></div>
+        <div class="gc-banner-content">
+          <div class="gc-banner-tag">06 — Origin</div>
+          <h2 class="gc-banner-title">Born from<br><em>Grand Challenges</em></h2>
+          <p class="gc-banner-sub">This atlas started as a team project through the Georgia Tech Grand Challenges program — an interdisciplinary initiative tackling the world's most pressing problems.</p>
+        </div>
+        <div class="gc-banner-badge">
+          <div class="gc-banner-inst">
+            <strong>Georgia Tech</strong>
+            Grand Challenges
+          </div>
+        </div>
+      </div>
+
+      <div class="gc-narrative">
+        <div class="reveal">
+          <div class="sec-label">The Collaboration</div>
+          <h2 class="gc-nar-heading" style="margin-top:1.3rem">Where <em>innovation</em><br>meets on-the-ground<br>expertise</h2>
+        </div>
+        <div>
+          <p class="reveal" style="margin-bottom:1.2rem">Our team is advised by the GT Grand Challenges program, led by <strong>Dr. Jeffrey Davis</strong> and <strong>Dr. Ilya Gokhman</strong>. Alongside Georgia Tech's technical infrastructure, we are supported by researchers and professors from West Virginia University who bring deep domain expertise and local knowledge of AMD issues.</p>
+          <p class="reveal">We have also interviewed stakeholders directly involved in AMD cleanup efforts — hearing their perspective from tackling acid mine drainage on the ground. This interdisciplinary collaboration ensures our platform is technically robust, scientifically accurate, and built for the people who need it most.</p>
+        </div>
+      </div>
+
+      <div class="advisor-grid reveal">
+        <div class="adv-card gt">
+          <div class="adv-bg-letter">GT</div>
+          <div class="adv-inst-tag">Georgia Tech</div>
+          <div class="adv-name">Dr. Jeffrey Davis</div>
+          <div class="adv-title">Program Advisor · Grand Challenges</div>
+          <p class="adv-desc">Leads the GT Grand Challenges program, guiding interdisciplinary student teams toward scalable, real-world solutions to complex environmental and societal problems.</p>
+        </div>
+        <div class="adv-card gt">
+          <div class="adv-bg-letter">GT</div>
+          <div class="adv-inst-tag">Georgia Tech</div>
+          <div class="adv-name">Dr. Ilya Gokhman</div>
+          <div class="adv-title">Program Advisor · Grand Challenges</div>
+          <p class="adv-desc">Co-leads the Grand Challenges initiative at Georgia Tech, providing strategic direction and technical mentorship to the AMD &amp; REE research team.</p>
+        </div>
+        <div class="adv-card wvu">
+          <div class="adv-bg-letter">WV</div>
+          <div class="adv-inst-tag">West Virginia University</div>
+          <div class="adv-name">Dr. Dorothy Vesper</div>
+          <div class="adv-title">Low-Temperature Geochemist · Domain Expert</div>
+          <p class="adv-desc">A leading expert in coal-mine drainage and contaminant transport through water systems. Her extensive experience in AMD remediation has guided our scientific approach and ensured the accuracy of this platform.</p>
+        </div>
+      </div>
+
+      <div class="team-photo-wrap reveal">
+        <img src="Group-picture.png" alt="The AMD &amp; REE Research Team"/>
+        <div class="team-photo-gradient"></div>
+        <div class="team-photo-caption">
+          <div class="team-caption-left">
+            <span>The Team</span>
+            Georgia Tech &amp; WVU · Grand Challenges
+          </div>
+          <div class="team-caption-right">AMD &amp; REE Atlas · 2025</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="rule"></div>
+
+<!-- ════════════════════════════════════════ ACKNOWLEDGEMENTS -->
+<section id="ack" class="sec">
+  <div class="sec-inner">
+    <div class="container">
+      <div class="ack-top reveal">
+        <div>
+          <div class="sec-label">07 — Acknowledgements</div>
+          <h2 class="ack-h" style="margin-top:1.3rem">With<br>gratitude <em>to</em></h2>
+        </div>
+        <p class="ack-statement">"This work stands on the data infrastructure built by federal agencies, state regulators, and researchers who have monitored these damaged waters for decades — often with little recognition."</p>
+      </div>
+      <div class="ack-rule reveal"></div>
+      <div class="ack-grid reveal">
+        <div>
+          <div class="ack-col-title">Research &amp; Data</div>
+          <ul class="ack-list">
+            <li>US Geological Survey<span>Water Resources Mission Area · National Water Information System</span></li>
+            <li>US Environmental Protection Agency<span>Water Quality Portal · STORET Database</span></li>
+            <li>WV Department of Environmental Protection<span>Division of Water and Waste Management</span></li>
+            <li>National Mine Land Reclamation Center<span>West Virginia University</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="ack-col-title">Technical &amp; Spatial</div>
+          <ul class="ack-list">
+            <li>Esri ArcGIS Online<span>Living Atlas of the World · Hosted Feature Layers</span></li>
+            <li>USGS National Hydrography Dataset<span>NHDPlus High Resolution Stream Network</span></li>
+            <li>USGS Watershed Boundary Dataset<span>HUC12 Sub-Watershed Boundaries</span></li>
+            <li>USGS Water Data OGC API<span>Real-time and Historical Sensor Data</span></li>
+          </ul>
+        </div>
+        <div>
+          <div class="ack-col-title">Scientific Foundation</div>
+          <ul class="ack-list">
+            <li>AMD Stakeholder Partners<span>Community members &amp; remediation practitioners interviewed directly</span></li>
+            <li>DOE Critical Materials Institute<span>REE Recovery from Secondary Sources</span></li>
+            <li>Appalachian Research Initiative<span>for Environmental Science (ARIES)</span></li>
+            <li>Downstream Strategies<span>AMD field documentation across Appalachian coalfields</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="ack-closing reveal">
+        <p class="ack-closing-text">This atlas was developed as a Grand Challenges project at Georgia Tech in collaboration with West Virginia University, combining Georgia Tech's innovation with WVU's on-the-ground expertise to create a sustainable and impactful resource for AMD monitoring and mitigation. All findings are preliminary and subject to revision as datasets evolve.</p>
+        <div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:var(--t3)">GT Grand Challenges · CC BY 4.0 · 2025</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════════════════════ FOOTER -->
+<footer>
+  <div class="ft-l"><strong>WV AMD &amp; REE Atlas</strong> · ArcGIS Online · Three.js · GSAP · Data: USGS, EPA, ArcGIS Living Atlas</div>
+  <div class="ft-r">
+    <a href="#map-sec">Map</a><a href="#data">Data</a><a href="#ack">Acknowledgements</a>
+  </div>
+</footer>
+
+<!-- ════════════════════════════════════════ SCRIPTS -->
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+<script>
+'use strict';
+
+/* ── UTILS ─────────────────────────────────────────────────────────── */
+const lerp  = (a,b,t) => a+(b-a)*t;
+const clamp = (v,lo,hi) => Math.max(lo,Math.min(hi,v));
+
+/* ── CURSOR ────────────────────────────────────────────────────────── */
+const cdot  = document.getElementById('cdot');
+const cring = document.getElementById('cring');
+let mx=-200,my=-200,rx=-200,ry=-200;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cdot.style.cssText=`left:${mx}px;top:${my}px`});
+(function animRing(){rx+=.1*(mx-rx);ry+=.1*(my-ry);cring.style.cssText=`left:${rx}px;top:${ry}px`;requestAnimationFrame(animRing)})();
+document.querySelectorAll('a,button,.cc,.dc,.re,.map-frame,.mag-wrap,.adv-card,.gc-banner,.team-photo-wrap').forEach(el=>{
+  el.addEventListener('mouseenter',()=>document.body.classList.add('chov'));
+  el.addEventListener('mouseleave',()=>document.body.classList.remove('chov'));
+});
+
+/* ── CURSOR GLOW TRAIL ─────────────────────────────────────────────── */
+(function initTrail(){
+  const cv=document.getElementById('trailcanvas');
+  const ctx=cv.getContext('2d');
+  cv.width=innerWidth;cv.height=innerHeight;
+  const pts=[];
+  let f=0;
+  (function loop(){
+    requestAnimationFrame(loop);f++;
+    if(f%2===0)pts.push({x:mx,y:my,l:1,s:9+Math.random()*9});
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(let i=pts.length-1;i>=0;i--){
+      const p=pts[i];p.l-=.055;
+      if(p.l<=0){pts.splice(i,1);continue}
+      const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.s*p.l+p.s*.4);
+      g.addColorStop(0,`rgba(0,217,163,${p.l*.28})`);
+      g.addColorStop(1,'rgba(0,217,163,0)');
+      ctx.fillStyle=g;ctx.beginPath();ctx.arc(p.x,p.y,p.s,0,Math.PI*2);ctx.fill();
+    }
+  })();
+  window.addEventListener('resize',()=>{cv.width=innerWidth;cv.height=innerHeight});
+})();
+
+/* ── LOADER ────────────────────────────────────────────────────────── */
+const loader=document.getElementById('loader');
+const lofill=document.getElementById('lofill');
+const lopct =document.getElementById('lopct');
+let loaderPct=0;
+const loaderTick=setInterval(()=>{
+  loaderPct=Math.min(loaderPct+Math.random()*6+2,99);
+  lofill.style.width=loaderPct+'%';
+  lopct.textContent=Math.floor(loaderPct)+'%';
+},90);
+window.addEventListener('load',()=>{
+  clearInterval(loaderTick);lofill.style.width='100%';lopct.textContent='100%';
+  gsap.timeline({delay:.25})
+    .to('.lo-brand',{opacity:1,y:0,duration:.7,ease:'power3.out'})
+    .to('.lo-sub',  {opacity:1,duration:.5},'-=.3')
+    .to(loader,     {yPercent:-100,duration:1,ease:'power3.inOut',delay:.5})
+    .from('.h-eyebrow',    {opacity:0,y:18,duration:.6},'-=.4')
+    .from('.h-line-inner', {opacity:0,y:105,duration:1.1,stagger:.1,ease:'power4.out'},'-=.5')
+    .from('.h-sub',        {opacity:0,y:28,duration:.7},'-=.5')
+    .from('.h-actions',    {opacity:0,y:18,duration:.6},'-=.45')
+    .from('.scroll-hint',  {opacity:0,duration:.8},'-=.25');
+});
+
+/* ── HEADER ────────────────────────────────────────────────────────── */
+const siteheader=document.getElementById('siteheader');
+window.addEventListener('scroll',()=>siteheader.classList.toggle('sc',scrollY>60),{passive:true});
+
+/* ── THREE.JS BIOLUMINESCENT BACKGROUND ───────────────────────────── */
+(function initBG(){
+  const canvas=document.getElementById('bgcanvas');
+  const W=innerWidth,H=innerHeight;
+  const renderer=new THREE.WebGLRenderer({canvas,antialias:true,alpha:true});
+  renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+  renderer.setSize(W,H);
+  renderer.setClearColor(0x000000,0);
+  const scene=new THREE.Scene();
+  const camera=new THREE.PerspectiveCamera(65,W/H,.1,1000);
+  camera.position.z=55;
+
+  const ORB_N=60;
+  const SPARK_N=innerWidth<640?900:2500;
+  const COUNT=ORB_N+SPARK_N;
+
+  const pos=new Float32Array(COUNT*3);
+  const col=new Float32Array(COUNT*3);
+  const sz =new Float32Array(COUNT);
+  const alp=new Float32Array(COUNT);
+  const orb=new Float32Array(COUNT);
+  const spd=new Float32Array(COUNT*3);
+  const ph =new Float32Array(COUNT);
+
+  // Bioluminescent color palette
+  const TEAL =[0,.851,.639];
+  const BLUE =[0,.4,1];
+  const CYAN =[0,.78,.9];
+  const LTEAL=[.28,.94,.76];
+  const LBLUE=[.65,.88,1];
+  const AMBER=[1,.55,0];
+  const ORB_PAL  =[TEAL,BLUE,CYAN,LTEAL,TEAL,BLUE];
+  const SPK_PAL  =[TEAL,LBLUE,CYAN,LTEAL,BLUE,LBLUE,TEAL,TEAL,LBLUE,AMBER];
+
+  for(let i=0;i<COUNT;i++){
+    pos[i*3]  =(Math.random()-.5)*130;
+    pos[i*3+1]=(Math.random()-.5)*90;
+    pos[i*3+2]=(Math.random()-.5)*60;
+    spd[i*3]  =(Math.random()-.5)*.007;
+    spd[i*3+1]=(Math.random()-.5)*.005;
+    spd[i*3+2]=(Math.random()-.5)*.004;
+    ph[i]=Math.random()*Math.PI*2;
+    if(i<ORB_N){
+      orb[i]=1;sz[i]=5+Math.random()*10;alp[i]=.35+Math.random()*.45;
+      const c=ORB_PAL[Math.floor(Math.random()*ORB_PAL.length)];
+      col[i*3]=c[0];col[i*3+1]=c[1];col[i*3+2]=c[2];
+    } else {
+      orb[i]=0;sz[i]=.5+Math.random()*2.2;alp[i]=.15+Math.random()*.55;
+      const c=SPK_PAL[Math.floor(Math.random()*SPK_PAL.length)];
+      col[i*3]=c[0];col[i*3+1]=c[1];col[i*3+2]=c[2];
+    }
+  }
+
+  const geo=new THREE.BufferGeometry();
+  geo.setAttribute('position',new THREE.BufferAttribute(pos,3));
+  geo.setAttribute('aColor',  new THREE.BufferAttribute(col,3));
+  geo.setAttribute('aSize',   new THREE.BufferAttribute(sz,1));
+  geo.setAttribute('aAlpha',  new THREE.BufferAttribute(alp,1));
+  geo.setAttribute('aOrb',    new THREE.BufferAttribute(orb,1));
+
+  const vsShader=`
+    precision mediump float;
+    uniform float uTime;
+    uniform float uGlobalAlpha;
+    attribute float aSize;
+    attribute float aAlpha;
+    attribute vec3 aColor;
+    attribute float aOrb;
+    varying float vAlpha;
+    varying vec3 vColor;
+    void main(){
+      vAlpha=aAlpha*uGlobalAlpha;
+      vColor=aColor;
+      float s=aSize;
+      if(aOrb>.5) s*=1.0+.38*sin(uTime+aAlpha*12.566);
+      vec4 mvPos=modelViewMatrix*vec4(position,1.0);
+      gl_PointSize=s*(350.0/-mvPos.z);
+      gl_Position=projectionMatrix*mvPos;
+    }
+  `;
+  const fsShader=`
+    precision mediump float;
+    varying float vAlpha;
+    varying vec3 vColor;
+    void main(){
+      vec2 uv=gl_PointCoord-vec2(.5);
+      float d=length(uv)*2.0;
+      float a=1.0-smoothstep(.3,1.0,d);
+      a=pow(a,1.8);
+      if(a<.004) discard;
+      gl_FragColor=vec4(vColor,a*vAlpha);
+    }
+  `;
+
+  const mat=new THREE.ShaderMaterial({
+    uniforms:{uTime:{value:0},uGlobalAlpha:{value:1.0}},
+    vertexShader:vsShader,
+    fragmentShader:fsShader,
+    transparent:true,
+    blending:THREE.AdditiveBlending,
+    depthWrite:false,
+    depthTest:false
+  });
+
+  const pts=new THREE.Points(geo,mat);
+  scene.add(pts);
+
+  let tX=0,tY=0,cX=0,cY=0,scR=0,f=0;
+  document.addEventListener('mousemove',e=>{tX=(e.clientX/innerWidth-.5);tY=(e.clientY/innerHeight-.5)});
+  window.addEventListener('scroll',()=>{scR=Math.min(scrollY/(document.body.scrollHeight-innerHeight),1)},{passive:true});
+
+  (function anim(){
+    requestAnimationFrame(anim);f++;
+    mat.uniforms.uTime.value=f*.003;
+    mat.uniforms.uGlobalAlpha.value=Math.max(.06,1.0-scR*.55);
+    const pa=geo.attributes.position.array;
+    const t=f*.0007;
+    for(let i=0;i<COUNT;i++){
+      pa[i*3]  +=spd[i*3]  +Math.sin(t+ph[i])*.0014;
+      pa[i*3+1]+=spd[i*3+1]+Math.cos(t+ph[i]*.7)*.0014;
+      pa[i*3+2]+=spd[i*3+2];
+      if(pa[i*3]>65)pa[i*3]=-65;if(pa[i*3]<-65)pa[i*3]=65;
+      if(pa[i*3+1]>45)pa[i*3+1]=-45;if(pa[i*3+1]<-45)pa[i*3+1]=45;
+    }
+    geo.attributes.position.needsUpdate=true;
+    cX+=.04*(tX-cX);cY+=.04*(tY-cY);
+    pts.rotation.y=cX*.3+scR*.5;pts.rotation.x=cY*.15+scR*.2;
+    renderer.render(scene,camera);
+  })();
+  window.addEventListener('resize',()=>{const nW=innerWidth,nH=innerHeight;camera.aspect=nW/nH;camera.updateProjectionMatrix();renderer.setSize(nW,nH)});
+})();
+
+/* ── AMD 2D CANVAS SCENE ───────────────────────────────────────────── */
+class AMDScene{
+  constructor(){
+    this.canvas=document.getElementById('amdcanvas');
+    this.ctx=this.canvas.getContext('2d');
+    this.contamination=0;
+    this.t=0;
+    this.particles=[];
+    this.stars=[];
+    this.px=0;this.py=0;
+    this.targetPX=0;this.targetPY=0;
+    this.resize();
+    this.initStars();
+    this.initParticles();
+    this.animate();
+    const section=document.getElementById('amd-scene');
+    section.addEventListener('mousemove',e=>{
+      const r=section.getBoundingClientRect();
+      this.targetPX=(e.clientX/r.width-.5)*18;
+      this.targetPY=(e.clientY/r.height-.5)*10;
+    });
+    section.addEventListener('mouseleave',()=>{this.targetPX=0;this.targetPY=0});
+    window.addEventListener('resize',()=>this.resize());
+  }
+  resize(){
+    const c=this.canvas;
+    c.width=c.offsetWidth||innerWidth;
+    c.height=c.offsetHeight||innerHeight;
+    this.W=c.width;this.H=c.height;
+  }
+  initStars(){
+    this.stars=[];
+    for(let i=0;i<140;i++)this.stars.push([Math.random(),Math.random()*.85,Math.random()*.7+.3,Math.random()*.5+.1]);
+  }
+  initParticles(){
+    this.particles=[];
+    for(let i=0;i<30;i++)this.spawnFlowParticle();
+  }
+  spawnContamParticle(){
+    const {W,H}=this;
+    const hx=W*.20,hy=H*.44;
+    const ang=Math.PI/2+Math.PI/6+(Math.random()-.5)*.8;
+    const spd=.35+Math.random()*.55;
+    this.particles.push({
+      x:hx+(Math.random()-.5)*50,y:hy-Math.random()*40,
+      vx:Math.cos(ang)*spd,vy:Math.sin(ang)*spd,
+      life:240+Math.random()*160,maxLife:400,
+      type:'contam',size:1.4+Math.random()*2.2,
+      r:255,g:120+Math.random()*30,b:0
+    });
+  }
+  spawnFlowParticle(){
+    const {W,H}=this;
+    const y0=H*.58+(Math.random()-.5)*H*.04;
+    this.particles.push({
+      x:Math.random()*W*.3,y:y0,
+      vx:1.1+Math.random()*1.4,vy:(Math.random()-.5)*.08,
+      life:280+Math.random()*200,maxLife:480,
+      type:'flow',size:.9+Math.random()*1.3,
+      r:0,g:217,b:163
+    });
+  }
+  updateParticles(){
+    const {W,contamination}=this;
+    if(contamination>.05&&Math.random()<contamination*.55)this.spawnContamParticle();
+    if(Math.random()<.35)this.spawnFlowParticle();
+    this.particles=this.particles.filter(p=>{
+      p.x+=p.vx;p.y+=p.vy;p.vy+=.004;p.vx*=.995;p.life--;
+      if(p.type==='flow'&&p.x>W*.2){
+        const blend=contamination*.85;
+        p.r=Math.round(lerp(0,255,blend));
+        p.g=Math.round(lerp(217,120,blend));
+        p.b=Math.round(lerp(163,0,blend));
+      }
+      return p.life>0&&p.x<W+20&&p.x>-20;
+    });
+  }
+  drawSky(){
+    const {ctx,W,H,contamination,t,px,py}=this;
+    const hy=H*.44+py*.2;
+    // deep ocean sky gradient
+    const g=ctx.createLinearGradient(0,0,0,hy);
+    g.addColorStop(0,'#010608');
+    g.addColorStop(.45,'#020c14');
+    g.addColorStop(1,`rgb(${Math.round(2+contamination*22)},${Math.round(12+contamination*6)},${Math.round(20-contamination*12)})`);
+    ctx.fillStyle=g;ctx.fillRect(0,0,W,hy);
+    // stars fade with contamination
+    for(const [sx,sy,sr,sa] of this.stars){
+      ctx.beginPath();ctx.arc(sx*W+px*.05,sy*hy*.9+py*.02,sr,0,Math.PI*2);
+      ctx.fillStyle=`rgba(180,210,240,${sa*(1-contamination*.5)})`;ctx.fill();
+    }
+    // horizon glow: teal when clean, amber when contaminated
+    const hg=ctx.createLinearGradient(0,hy-80,0,hy);
+    hg.addColorStop(0,'rgba(0,0,0,0)');
+    const hr=Math.round(contamination*80);
+    const hgr=Math.round(lerp(30,25,contamination));
+    const hb_=Math.round(lerp(22,0,contamination));
+    const ha=Math.max(.04,contamination*.32);
+    hg.addColorStop(1,`rgba(${hr},${hgr},${hb_},${ha})`);
+    ctx.fillStyle=hg;ctx.fillRect(0,hy-80,W,80);
+  }
+  drawMountains(){
+    const {ctx,W,H,px,py}=this;
+    const hy=H*.44;
+    ctx.save();ctx.translate(px*.06,py*.04);
+    const mountains=[
+      {x:.08,h:.14,w:.22,c:'#0a1218'},{x:.42,h:.16,w:.28,c:'#080f14'},
+      {x:.72,h:.12,w:.22,c:'#0a1218'},{x:.92,h:.09,w:.18,c:'#070e12'}
+    ];
+    for(const m of mountains){
+      const bx=m.x*W,by=hy,bh=m.h*H,bw=m.w*W*.5;
+      ctx.beginPath();ctx.moveTo(bx-bw,by);
+      ctx.bezierCurveTo(bx-bw*.4,by,bx-bw*.2,by-bh*.6,bx,by-bh);
+      ctx.bezierCurveTo(bx+bw*.2,by-bh*.6,bx+bw*.4,by,bx+bw,by);
+      ctx.closePath();ctx.fillStyle=m.c;ctx.fill();
+    }
+    ctx.restore();
+  }
+  drawMineStructures(){
+    const {ctx,W,H,contamination,px,py}=this;
+    const hy=H*.44;
+    const ox=px*.08,oy=py*.06;
+    ctx.save();ctx.translate(ox,oy);
+    const mx_=W*.19;
+    // refuse heap
+    ctx.beginPath();ctx.ellipse(mx_+W*.09,hy,W*.075,H*.022,0,Math.PI,0);
+    ctx.fillStyle='#1a1208';ctx.fill();
+    // ground contamination stain (amber when polluted)
+    if(contamination>.02){
+      const sg=ctx.createRadialGradient(mx_,hy,0,mx_,hy,W*.18*contamination+W*.04);
+      sg.addColorStop(0,`rgba(180,80,0,${contamination*.38})`);
+      sg.addColorStop(.5,`rgba(100,40,0,${contamination*.2})`);
+      sg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=sg;
+      ctx.beginPath();ctx.ellipse(mx_+W*.04,hy+H*.04,W*.18,H*.08,0,0,Math.PI*2);ctx.fill();
+    }
+    // ambient amber glow from mine when contaminated
+    if(contamination>.1){
+      const mg=ctx.createRadialGradient(mx_,hy,0,mx_,hy,W*.22);
+      mg.addColorStop(0,`rgba(255,100,0,${contamination*.1})`);
+      mg.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=mg;ctx.fillRect(0,0,W,H*.7);
+    }
+    // main building
+    ctx.fillStyle='#0d0c0a';
+    ctx.beginPath();
+    ctx.moveTo(mx_-W*.07,hy);ctx.lineTo(mx_-W*.07,hy-H*.06);
+    ctx.lineTo(mx_-W*.03,hy-H*.086);ctx.lineTo(mx_+W*.04,hy-H*.06);
+    ctx.lineTo(mx_+W*.04,hy);ctx.closePath();ctx.fill();
+    // dark windows
+    ctx.fillStyle='#060504';
+    [[mx_-W*.055,hy-H*.05,W*.016,H*.024],[mx_-W*.02,hy-H*.05,W*.016,H*.024],[mx_+W*.01,hy-H*.05,W*.016,H*.024]].forEach(([x,y,w,h])=>ctx.fillRect(x,y,w,h));
+    // chimney
+    ctx.fillStyle='#0c0b09';ctx.fillRect(mx_-W*.09,hy-H*.1,W*.012,H*.05);
+    // headframe A-frame (teal-dark silhouette)
+    const hx_=mx_+W*.1,hh=H*.16;
+    const fColor=contamination>.3?'#2a1800':'#0e1a14';
+    ctx.strokeStyle=fColor;ctx.lineCap='round';
+    ctx.lineWidth=4.5;
+    ctx.beginPath();ctx.moveTo(hx_-W*.038,hy);ctx.lineTo(hx_,hy-hh);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(hx_+W*.038,hy);ctx.lineTo(hx_,hy-hh);ctx.stroke();
+    ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(hx_-W*.025,hy-hh*.38);ctx.lineTo(hx_+W*.025,hy-hh*.38);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(hx_-W*.017,hy-hh*.62);ctx.lineTo(hx_+W*.017,hy-hh*.62);ctx.stroke();
+    ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(hx_-W*.01,hy-hh*.8);ctx.lineTo(hx_+W*.01,hy-hh*.8);ctx.stroke();
+    ctx.fillStyle='#12100c';
+    ctx.beginPath();ctx.arc(hx_,hy-hh,5.5,0,Math.PI*2);ctx.fill();
+    ctx.strokeStyle='rgba(20,18,12,.8)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(hx_,hy-hh);ctx.lineTo(hx_-2,hy-4);ctx.stroke();
+    ctx.restore();
+  }
+  drawTerrain(){
+    const {ctx,W,H,px,py}=this;
+    const hy=H*.44;
+    ctx.save();ctx.translate(px*.1,py*.08);
+    const g=ctx.createLinearGradient(0,hy,W*.3,H);
+    g.addColorStop(0,'#080d0c');g.addColorStop(1,'#060a09');
+    ctx.beginPath();
+    ctx.moveTo(0,hy);ctx.lineTo(W,hy);ctx.lineTo(W,H);ctx.lineTo(0,H);ctx.closePath();
+    ctx.fillStyle=g;ctx.fill();
+    ctx.strokeStyle='rgba(0,217,163,.012)';ctx.lineWidth=1;
+    for(let i=0;i<6;i++){
+      ctx.beginPath();ctx.moveTo(W*.25+i*W*.06,hy);
+      ctx.bezierCurveTo(W*.3+i*W*.06,hy+H*.05,W*.35+i*W*.06,hy+H*.04,W*.5+i*W*.06,hy+H*.03);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+  drawStream(){
+    const {ctx,W,H,contamination,t,px,py}=this;
+    const ry=H*.585+py*.1;const rH=H*.065;
+    ctx.save();ctx.translate(px*.12,py*.1);
+    const drawRiverPath=()=>{
+      ctx.beginPath();
+      ctx.moveTo(-10,ry);
+      ctx.bezierCurveTo(W*.2,ry-H*.012,W*.5,ry+H*.008,W*.8,ry-H*.006);
+      ctx.lineTo(W+10,ry);ctx.lineTo(W+10,ry+rH);
+      ctx.bezierCurveTo(W*.8,ry+rH+H*.008,W*.5,ry+rH-H*.006,W*.2,ry+rH+H*.01);
+      ctx.lineTo(-10,ry+rH);ctx.closePath();
+    };
+    // bioluminescent river: deep blue (clean) → amber (AMD)
+    const sg=ctx.createLinearGradient(0,0,W,0);
+    const front=clamp(contamination*.9+.06,0,1);
+    const R1=0,G1=102,B1=255;   // clean deep blue
+    const R2=255,G2=120,B2=0;   // AMD amber
+    const mix=(r1,r2,f)=>Math.round(r1+(r2-r1)*f);
+    sg.addColorStop(0,`rgba(${R2},${G2},${B2},.92)`);
+    if(front<.95){
+      sg.addColorStop(Math.max(0,front-.12),`rgba(${R2},${G2},${B2},.9)`);
+      sg.addColorStop(front,`rgba(${mix(R2,R1,.5)},${mix(G2,G1,.5)},${mix(B2,B1,.5)},.88)`);
+      sg.addColorStop(Math.min(1,front+.12),`rgba(${R1},${G1},${B1},.9)`);
+    }
+    sg.addColorStop(1,`rgba(${mix(R1,R2,contamination*.2)},${mix(G1,G2,contamination*.2)},${mix(B1,B2,contamination*.2)},.9)`);
+    drawRiverPath();ctx.fillStyle=sg;ctx.fill();
+    // flow shimmer
+    ctx.save();drawRiverPath();ctx.clip();
+    const flowA=Math.max(0,.14-contamination*.1);
+    for(let i=0;i<10;i++){
+      const xoff=((t*.28+i/10)%1)*W;
+      ctx.beginPath();
+      ctx.moveTo(-10+xoff,ry+rH*.3);
+      ctx.bezierCurveTo(W*.25+xoff*.08,ry+rH*.4,W*.55+xoff*.04,ry+rH*.5,W+xoff*.06,ry+rH*.4);
+      ctx.strokeStyle=`rgba(255,255,255,${flowA})`;ctx.lineWidth=1;ctx.stroke();
+    }
+    // teal bioluminescent glow in clean water section
+    if(contamination<.8){
+      const tg=ctx.createLinearGradient(0,0,W,0);
+      const glowStart=Math.min(1,front+.1);
+      tg.addColorStop(glowStart,'rgba(0,217,163,0)');
+      tg.addColorStop(Math.min(1,glowStart+.1),`rgba(0,217,163,${(1-contamination)*.06})`);
+      tg.addColorStop(1,'rgba(0,217,163,0)');
+      ctx.fillStyle=tg;
+      ctx.beginPath();ctx.moveTo(-10,ry);ctx.lineTo(W+10,ry);ctx.lineTo(W+10,ry+rH);ctx.lineTo(-10,ry+rH);ctx.closePath();
+      ctx.fill();
+    }
+    // yellowboy amber precipitate at bottom
+    if(contamination>.4){
+      const yg=ctx.createLinearGradient(0,ry+rH*.55,0,ry+rH);
+      yg.addColorStop(0,'rgba(0,0,0,0)');
+      yg.addColorStop(1,`rgba(180,80,0,${(contamination-.4)*.55})`);
+      ctx.fillStyle=yg;
+      ctx.beginPath();ctx.moveTo(-10,ry+rH*.55);ctx.lineTo(W+10,ry+rH*.55);ctx.lineTo(W+10,ry+rH);ctx.lineTo(-10,ry+rH);ctx.closePath();
+      ctx.fill();
+    }
+    ctx.restore();
+    // bank edges
+    const be1=ctx.createLinearGradient(0,ry-4,0,ry+6);
+    be1.addColorStop(0,'rgba(2,8,16,0)');be1.addColorStop(1,'rgba(2,8,16,.45)');
+    ctx.fillStyle=be1;ctx.fillRect(-10,ry-4,W+20,10);
+    const be2=ctx.createLinearGradient(0,ry+rH-6,0,ry+rH+4);
+    be2.addColorStop(0,'rgba(2,8,16,.45)');be2.addColorStop(1,'rgba(2,8,16,0)');
+    ctx.fillStyle=be2;ctx.fillRect(-10,ry+rH-6,W+20,10);
+    ctx.restore();
+  }
+  drawParticles(){
+    const {ctx}=this;
+    for(const p of this.particles){
+      const a=Math.min(1,p.life/(p.maxLife*.25))*(p.life/p.maxLife);
+      // glow pass
+      const glow=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.size*3.5);
+      glow.addColorStop(0,`rgba(${p.r},${p.g},${p.b},${a*.25})`);
+      glow.addColorStop(1,'rgba(0,0,0,0)');
+      ctx.fillStyle=glow;ctx.beginPath();ctx.arc(p.x,p.y,p.size*3.5,0,Math.PI*2);ctx.fill();
+      // core
+      ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);
+      ctx.fillStyle=`rgba(${p.r},${p.g},${p.b},${a*.85})`;ctx.fill();
+    }
+  }
+  drawForeground(){
+    const {ctx,W,H,px,py}=this;
+    ctx.save();ctx.translate(px*.18,py*.14);
+    const drawRock=(cx,cy,rx,ry2,col)=>{
+      ctx.beginPath();ctx.ellipse(cx,cy,rx,ry2,-.1,0,Math.PI*2);
+      ctx.fillStyle=col;ctx.fill();
+    };
+    drawRock(W*.04,H*.82,W*.06,H*.04,'#080e0c');
+    drawRock(W*.10,H*.88,W*.05,H*.035,'#070c0a');
+    drawRock(W*.88,H*.80,W*.055,H*.038,'#080e0c');
+    drawRock(W*.94,H*.86,W*.042,H*.03,'#070c0a');
+    const drawTree=(tx,ty,th,tw)=>{
+      ctx.strokeStyle='rgba(12,18,14,.9)';ctx.lineWidth=tw;ctx.lineCap='round';
+      ctx.beginPath();ctx.moveTo(tx,ty);ctx.lineTo(tx-tw*.5,ty-th);ctx.stroke();
+      ctx.lineWidth=tw*.6;
+      ctx.beginPath();ctx.moveTo(tx,ty-th*.45);ctx.lineTo(tx+th*.12,ty-th*.68);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(tx,ty-th*.6);ctx.lineTo(tx-th*.1,ty-th*.78);ctx.stroke();
+    };
+    drawTree(W*.78,H*.7,H*.12,3.5);drawTree(W*.82,H*.68,H*.09,2.8);drawTree(W*.15,H*.68,H*.11,3.2);
+    const fg=ctx.createLinearGradient(0,H*.72,0,H);
+    fg.addColorStop(0,'rgba(2,8,16,0)');fg.addColorStop(1,'rgba(2,8,16,.62)');
+    ctx.fillStyle=fg;ctx.fillRect(0,H*.72,W,H*.28);
+    ctx.restore();
+  }
+  drawVignette(){
+    const {ctx,W,H}=this;
+    const v=ctx.createRadialGradient(W/2,H/2,H*.25,W/2,H/2,H*.85);
+    v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(2,8,16,.72)');
+    ctx.fillStyle=v;ctx.fillRect(0,0,W,H);
+  }
+  updateLabel(progress){
+    const stages=[
+      {at:0,   stage:'West Virginia · Legacy Landscape', title:'An abandoned coal operation\nand the watershed it left behind', sub:'Decades after mining ceased, the chemistry persists.'},
+      {at:.22, stage:'Pyrite Oxidation Begins',           title:'FeS₂ + O₂ + H₂O →\nFe²⁺ + SO₄²⁻ + H⁺',                   sub:'Sulfide minerals in disturbed rock start to oxidize.'},
+      {at:.50, stage:'Acidic Runoff Enters the Watershed', title:'pH drops. Metals mobilize.\nThe stream chemistry changes.',    sub:'Iron and aluminum dissolve and begin to flow.'},
+      {at:.78, stage:'Full AMD Conditions',               title:'pH &lt; 4. Orange iron precipitate\ncoats the streambed.',     sub:'"Yellowboy" — the visible signature of acid mine drainage.'},
+    ];
+    let active=stages[0];
+    for(const s of stages)if(progress>=s.at)active=s;
+    document.getElementById('amdstage').textContent=active.stage;
+    document.getElementById('amdtitle').innerHTML=active.title.replace('\n','<br>');
+    document.getElementById('amdsub').textContent=active.sub;
+    document.getElementById('hudval').textContent=progress.toFixed(2);
+    document.getElementById('hudbar').style.width=(progress*100)+'%';
+  }
+  animate(){
+    const {ctx,W,H}=this;
+    ctx.clearRect(0,0,W,H);
+    this.px+=.08*(this.targetPX-this.px);
+    this.py+=.08*(this.targetPY-this.py);
+    this.drawSky();
+    this.drawMountains();
+    this.drawMineStructures();
+    this.drawTerrain();
+    this.drawStream();
+    this.updateParticles();
+    this.drawParticles();
+    this.drawForeground();
+    this.drawVignette();
+    this.t+=.004;
+    requestAnimationFrame(()=>this.animate());
+  }
+}
+const amdScene=new AMDScene();
+window.amdScene=amdScene;
+
+/* ── WEB AUDIO AMBIENT ─────────────────────────────────────────────── */
+let audioCtx=null,gainNode=null,audioOn=false;
+function initAudio(){
+  audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  const sr=audioCtx.sampleRate;
+  const buf=audioCtx.createBuffer(2,sr*4,sr);
+  let b0=0,b1=0,b2=0,b3=0,b4=0,b5=0,b6=0;
+  for(let ch=0;ch<2;ch++){
+    const d=buf.getChannelData(ch);b0=b1=b2=b3=b4=b5=b6=0;
+    for(let i=0;i<sr*4;i++){
+      const w=Math.random()*2-1;
+      b0=.99886*b0+w*.0555179;b1=.99332*b1+w*.0750759;b2=.96900*b2+w*.1538520;
+      b3=.86650*b3+w*.3104856;b4=.55000*b4+w*.5329522;
+      b5=-.7616*b5-w*.0168980;b6=w*.115926;
+      d[i]=(b0+b1+b2+b3+b4+b5+b6+w*.5362)*.1;
+    }
+  }
+  const src=audioCtx.createBufferSource();src.buffer=buf;src.loop=true;
+  const filt=audioCtx.createBiquadFilter();filt.type='lowpass';filt.frequency.value=600;filt.Q.value=.4;
+  const filt2=audioCtx.createBiquadFilter();filt2.type='highpass';filt2.frequency.value=100;
+  gainNode=audioCtx.createGain();gainNode.gain.value=0;
+  src.connect(filt);filt.connect(filt2);filt2.connect(gainNode);gainNode.connect(audioCtx.destination);
+  src.start();
+}
+function toggleAudio(){
+  if(!audioCtx)initAudio();
+  audioOn=!audioOn;
+  gainNode.gain.setTargetAtTime(audioOn?.075:0,audioCtx.currentTime,.6);
+  document.getElementById('audiobtn').classList.toggle('on',audioOn);
+  document.getElementById('audioicon').textContent=audioOn?'♫':'♪';
+}
+
+/* ── GSAP SCROLL ANIMATIONS ────────────────────────────────────────── */
+gsap.registerPlugin(ScrollTrigger);
+
+// AMD scene contamination scrub
+ScrollTrigger.create({
+  trigger:'#amd-scene',
+  start:'top top',
+  end:'bottom bottom',
+  scrub:1.8,
+  onUpdate(self){
+    amdScene.contamination=self.progress;
+    amdScene.updateLabel(self.progress);
+  }
+});
+
+// Submerge effect when entering AMD scene
+ScrollTrigger.create({
+  trigger:'#amd-scene',
+  start:'top 60%',
+  end:'bottom 15%',
+  onEnter:()=>document.body.classList.add('submerged'),
+  onLeave:()=>document.body.classList.remove('submerged'),
+  onEnterBack:()=>document.body.classList.add('submerged'),
+  onLeaveBack:()=>document.body.classList.remove('submerged'),
+});
+
+// Section reveals
+document.querySelectorAll('.reveal').forEach(el=>{
+  gsap.fromTo(el,{opacity:0,y:48},{
+    opacity:1,y:0,duration:.95,ease:'power3.out',
+    scrollTrigger:{trigger:el,start:'top 88%',once:true}
+  });
+});
+
+// Rule line draws
+document.querySelectorAll('.rule').forEach(el=>{
+  gsap.fromTo(el,{scaleX:0,transformOrigin:'left'},{
+    scaleX:1,duration:1.2,ease:'power3.inOut',
+    scrollTrigger:{trigger:el,start:'top 92%',once:true}
+  });
+});
+
+// Stat counters
+document.querySelectorAll('.stat-n[data-target]').forEach(el=>{
+  ScrollTrigger.create({
+    trigger:el,start:'top 86%',once:true,
+    onEnter(){
+      const t=parseInt(el.dataset.target),s=t>=50?'+':'';
+      gsap.to(el,{innerHTML:t,duration:1.5,ease:'power2.out',snap:{innerHTML:1},
+        onComplete(){el.textContent=t+s}});
+    }
+  });
+});
+
+// Chemistry bar fills
+document.querySelectorAll('.cc-fill').forEach(bar=>{
+  ScrollTrigger.create({
+    trigger:bar,start:'top 90%',once:true,
+    onEnter(){bar.style.width=bar.dataset.w+'%'}
+  });
+});
+
+// Animated radial gauge canvases
+function drawGauge(canvas,pct,hex){
+  if(!canvas||!canvas.getContext)return;
+  const ctx=canvas.getContext('2d');
+  const s=canvas.width,cx=s/2,cy=s/2,r=s/2-5;
+  ctx.clearRect(0,0,s,s);
+  const sa=Math.PI*.75,ea=Math.PI*2.25;
+  ctx.beginPath();ctx.arc(cx,cy,r,sa,ea);
+  ctx.strokeStyle='rgba(255,255,255,.06)';ctx.lineWidth=3;ctx.lineCap='round';ctx.stroke();
+  if(pct>0){
+    const fa=sa+(ea-sa)*pct;
+    const r_=parseInt(hex.slice(1,3),16),g_=parseInt(hex.slice(3,5),16),b_=parseInt(hex.slice(5,7),16);
+    ctx.beginPath();ctx.arc(cx,cy,r,sa,fa);
+    ctx.strokeStyle=`rgba(${r_},${g_},${b_},.9)`;
+    ctx.lineWidth=3;ctx.lineCap='round';
+    ctx.shadowColor=hex;ctx.shadowBlur=10;ctx.stroke();ctx.shadowBlur=0;
+  }
+}
+const gaugeConfig=[
+  {pct:.82,hex:'#ff8c00'},{pct:.76,hex:'#ff8c00'},
+  {pct:.66,hex:'#00d9a3'},{pct:.43,hex:'#0066ff'}
+];
+document.querySelectorAll('.gauge-canvas').forEach((cv,i)=>{
+  const cfg=gaugeConfig[i];
+  if(!cfg)return;
+  ScrollTrigger.create({
+    trigger:cv,start:'top 90%',once:true,
+    onEnter(){
+      let p=0;
+      const tid=setInterval(()=>{
+        p=Math.min(p+.018,cfg.pct);
+        drawGauge(cv,p,cfg.hex);
+        if(p>=cfg.pct)clearInterval(tid);
+      },16);
+    }
+  });
+});
+
+// Magnetic buttons
+document.querySelectorAll('.mag-wrap').forEach(wrap=>{
+  wrap.addEventListener('mousemove',e=>{
+    const r=wrap.getBoundingClientRect();
+    gsap.to(wrap,{x:(e.clientX-r.left-r.width/2)*.32,y:(e.clientY-r.top-r.height/2)*.32,duration:.35,ease:'power2.out'});
+  });
+  wrap.addEventListener('mouseleave',()=>{
+    gsap.to(wrap,{x:0,y:0,duration:.7,ease:'elastic.out(1,.45)'});
+  });
+});
+</script>
+</body>
+</html>

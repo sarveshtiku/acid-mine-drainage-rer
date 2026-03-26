@@ -1,0 +1,21 @@
+# Portal state (item IDs; optional to share)
+config/portal_state.json
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.env
+venv/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# OS
+.DS_Store
+Thumbs.db

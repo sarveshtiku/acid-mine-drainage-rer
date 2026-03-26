@@ -1,0 +1,59 @@
+{
+  "base_url": "https://api.waterdata.usgs.gov/ogcapi/v0",
+  "items_path": "/items",
+  "note": "ArcGIS Online accepts OGC API – Features URLs that return GeoJSON. Use /collections/{id}/items for feature layers. ~3,000 feature limit per request; use limit or bbox to stay under.",
+  "collections": [
+    {
+      "id": "monitoring-locations",
+      "title": "USGS Monitoring Locations",
+      "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/monitoring-locations/items",
+      "description": "USGS water monitoring station locations (name, identifier, coordinates, HUC).",
+      "refresh_minutes": 60,
+      "popup_fields": ["monitoring_location_id", "name", "latitude", "longitude", "huc"],
+      "query_params": {}
+    },
+    {
+      "id": "latest-continuous",
+      "title": "USGS Latest Continuous (Real-Time)",
+      "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/latest-continuous/items",
+      "description": "Most recent continuous sensor values (real-time). Parameter codes filter to pH, conductivity, etc.",
+      "refresh_minutes": 15,
+      "popup_fields": ["monitoring_location_id", "parameter_code", "value", "time", "unit_of_measure"],
+      "query_params": {
+        "parameter-codes": "00400,00095,00915,00940,29820"
+      }
+    },
+    {
+      "id": "daily",
+      "title": "USGS Daily Values",
+      "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily/items",
+      "description": "Daily statistics (e.g., mean pH, conductivity) from continuous sensors.",
+      "refresh_minutes": 60,
+      "popup_fields": ["monitoring_location_id", "parameter_code", "value", "time", "unit_of_measure"],
+      "query_params": {
+        "parameter-codes": "00400,00095,00915,00940,29820"
+      }
+    },
+    {
+      "id": "field-measurements",
+      "title": "USGS Field Measurements",
+      "url": "https://api.waterdata.usgs.gov/ogcapi/v0/collections/field-measurements/items",
+      "description": "Physical measurements from site visits (pH, conductivity, etc.).",
+      "refresh_minutes": 30,
+      "popup_fields": ["monitoring_location_id", "parameter", "value", "unit", "time"],
+      "query_params": {}
+    }
+  ],
+  "parameter_definitions": {
+    "00095": "Specific conductance (µS/cm)",
+    "00400": "pH",
+    "00915": "Sulfate (mg/L)",
+    "00940": "Iron (mg/L)",
+    "29820": "Alkalinity (mg/L as CaCO3)"
+  },
+  "arcgis_caveats": {
+    "feature_limit": "~3,000 features per request; use limit or bbox in URL if needed.",
+    "read_only": "OGC API layers are read-only in ArcGIS Online (symbolize and query only).",
+    "projection": "Use Web Mercator for best display in web maps."
+  }
+}

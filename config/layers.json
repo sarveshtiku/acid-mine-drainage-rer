@@ -1,0 +1,81 @@
+{
+  "hosted_layers": {
+    "amd_severity": {
+      "title": "AMD Severity Scores",
+      "type": "Polygon",
+      "id_field": "OBJECTID",
+      "date_fields": ["last_updated", "survey_date"],
+      "field_aliases": {
+        "OBJECTID": "Unique ID",
+        "amd_score": "AMD Severity Score",
+        "severity_class": "Severity Class",
+        "reach_id": "Reach ID",
+        "last_updated": "Last Updated",
+        "survey_date": "Survey Date",
+        "drainage_area_sqmi": "Drainage Area (sq mi)",
+        "notes": "Notes"
+      },
+      "symbology": "heatmap",
+      "description": "Geoprocessed acid mine drainage severity scores by stream reach."
+    },
+    "ree_potential": {
+      "title": "REE Potential Scores",
+      "type": "Polygon",
+      "id_field": "OBJECTID",
+      "date_fields": ["last_updated", "assessment_date"],
+      "field_aliases": {
+        "OBJECTID": "Unique ID",
+        "ree_score": "REE Potential Score",
+        "potential_class": "Potential Class",
+        "reach_id": "Reach ID",
+        "last_updated": "Last Updated",
+        "assessment_date": "Assessment Date",
+        "total_ree_ppm": "Total REE (ppm)",
+        "notes": "Notes"
+      },
+      "symbology": "graduated",
+      "description": "Rare earth element potential scores by assessment unit."
+    },
+    "water_quality_points": {
+      "title": "Water Quality Sample Points",
+      "type": "Point",
+      "id_field": "OBJECTID",
+      "date_fields": ["sample_date", "collection_datetime"],
+      "field_aliases": {
+        "OBJECTID": "Unique ID",
+        "site_id": "Site ID",
+        "sample_date": "Sample Date",
+        "collection_datetime": "Collection Date/Time",
+        "ph": "pH",
+        "conductivity": "Conductivity (µS/cm)",
+        "sulfate_mgl": "Sulfate (mg/L)",
+        "iron_mgl": "Iron (mg/L)",
+        "alkalinity": "Alkalinity (mg/L as CaCO3)",
+        "notes": "Notes"
+      },
+      "symbology": "point",
+      "description": "Discrete water quality sample locations and chemistry."
+    },
+    "hydrology_units": {
+      "title": "Hydrology Units (Watersheds)",
+      "type": "Polygon",
+      "id_field": "OBJECTID",
+      "date_fields": ["last_modified"],
+      "field_aliases": {
+        "OBJECTID": "Unique ID",
+        "huc_code": "HUC Code",
+        "huc_name": "HUC Name",
+        "last_modified": "Last Modified",
+        "area_sqmi": "Area (sq mi)"
+      },
+      "symbology": "outline",
+      "description": "Hydrologic unit boundaries (HUC) for watershed context."
+    }
+  },
+  "layer_view_filters": {
+    "amd_severity": "amd_score IS NOT NULL AND amd_score >= 0",
+    "ree_potential": "ree_score IS NOT NULL AND ree_score >= 0",
+    "water_quality_points": "sample_date IS NOT NULL",
+    "hydrology_units": "huc_code IS NOT NULL"
+  }
+}

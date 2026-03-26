@@ -1,0 +1,40 @@
+AMD + REE Portal – all project files
+====================================
+Open the folders in the sidebar to see these files (click the arrow next to the folder name).
+
+esj/
+├── README.md
+├── PROJECT_STRUCTURE.txt          (this file)
+├── requirements.txt
+├── .env.example
+├── .gitignore
+│
+├── config/
+│   ├── layers.json
+│   ├── metadata_defaults.json
+│   ├── symbology.json
+│   └── usgs_ogc_endpoints.json
+│
+├── data/
+│   ├── README.md
+│   ├── water_quality_points.csv
+│   └── water_quality_points_sample.csv
+│
+├── docs/
+│   ├── ARCGIS_PRO.md
+│   ├── DATA_DICTIONARY.md
+│   ├── DELIVERABLES.md
+│   └── ReadMe_layer_content.md
+│
+└── scripts/
+    ├── env.py
+    ├── run_all.py
+    ├── 01_project_setup.py
+    ├── 02_publish_hosted_layers.py
+    ├── 03_ogc_layers.py
+    ├── 04_web_map.py
+    ├── 05_dashboard.py
+    ├── 06_share_and_download.py
+    └── generate_deliverables.py
+
+To run:  python scripts/run_all.py

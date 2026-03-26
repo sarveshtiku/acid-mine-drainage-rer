@@ -1,0 +1,6 @@
+{
+  "tags": ["AMD", "REE", "acid mine drainage", "rare earth elements", "water quality", "USGS", "watershed"],
+  "summary_template": "Hosted feature layer for AMD_REE_Portal. {description}",
+  "license": "CC BY 4.0",
+  "culture": "en-us"
+}
