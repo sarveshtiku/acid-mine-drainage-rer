@@ -1,4 +1,4 @@
-# AMD + REE Spatial Intelligence Platform
+# Acid mine Drainage and Rare Eath Elements Spatial Intelligence Platform (West Virginia)
 ### West Virginia Acid Mine Drainage & Rare Earth Element Mapping
 
 ![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)
