@@ -36,23 +36,17 @@ $$
 \tilde{x}_i = \frac{x_i - \min(x)}{\max(x) - \min(x)}
 $$
 
-Plain text: `x_tilde_i = (x_i - min(x)) / (max(x) - min(x))`
-
 For acidity risk (where lower pH is worse):
 
 $$
 \tilde{pH}^{risk}_i = \frac{\max(pH) - pH_i}{\max(pH) - \min(pH)}
 $$
 
-Plain text: `pH_risk_tilde_i = (max(pH) - pH_i) / (max(pH) - min(pH))`
-
 ### AMD severity score (conceptual model)
 
 $$
 S_i^{AMD} = 0.30\tilde{pH}^{risk}_i + 0.20\tilde{SO4}_i + 0.20\tilde{Fe}_i + 0.15\tilde{Al}_i + 0.15\tilde{Mn}_i
 $$
-
-Plain text: `S_AMD_i = 0.30*pH_risk_tilde_i + 0.20*SO4_tilde_i + 0.20*Fe_tilde_i + 0.15*Al_tilde_i + 0.15*Mn_tilde_i`
 
 Interpretation: higher score means stronger contamination intensity.
 
@@ -62,8 +56,6 @@ $$
 C_i^{comp} = Ca_i + Fe_i + Al_i + Mn_i + K_i + Mg_i + Na_i
 $$
 
-Plain text: `C_comp_i = Ca_i + Fe_i + Al_i + Mn_i + K_i + Mg_i + Na_i`
-
 Interpretation: higher competing ions can reduce REE extraction efficiency.
 
 ### REE opportunity score (conceptual model)
@@ -71,8 +63,6 @@ Interpretation: higher competing ions can reduce REE extraction efficiency.
 $$
 S_i^{REE} = 0.45\tilde{REEsource}_i + 0.25\tilde{pH}^{extract}_i - 0.30\tilde{C}^{comp}_i
 $$
-
-Plain text: `S_REE_i = 0.45*REEsource_tilde_i + 0.25*pH_extract_tilde_i - 0.30*C_comp_tilde_i`
 
 Interpretation:
 
@@ -87,8 +77,6 @@ Point measurements are interpolated to create continuous surfaces and hotspot re
 $$
 \hat{S}(x) = \frac{\sum_i \frac{S_i}{d(x,x_i)^2}}{\sum_i \frac{1}{d(x,x_i)^2}}
 $$
-
-Plain text: `S_hat(x) = (sum_i [S_i / d(x,x_i)^2]) / (sum_i [1 / d(x,x_i)^2])`
 
 This supports watershed-level prioritization, not just site-by-site inspection.
 
