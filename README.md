@@ -6,15 +6,12 @@
 ![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
 ![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
 
----
-
 ## Overview
 
 A full-stack geospatial pipeline that transforms raw water chemistry data into actionable decision-support maps for AMD remediation and REE recovery in West Virginia. Built on a custom multi-factor scoring model, IDW spatial interpolation, and ArcGIS Online as the deployment layer.
 
 The goal: help field teams prioritize where to test, monitor, and intervene — with transparent methods and downloadable outputs.
 
----
 
 ## The Problem
 
@@ -30,37 +27,6 @@ The challenge is operational, not just scientific:
 | Planners | Downloadable data, not one-off analyses |
 | Stakeholders | Transparent metrics, not black-box maps |
 
----
-
-## System Architecture
-
-```
-Raw Water Chemistry Data (USGS / WQP)
-          │
-          ▼
-   Feature Engineering
-  ┌──────────────────────────────────────┐
-  │  Min-Max Normalization               │
-  │  pH Risk Inversion                   │
-  │  Competitive Cation Burden Calc      │
-  └──────────────────────────────────────┘
-          │
-          ▼
-   Composite Scoring Engine
-  ┌──────────────────────────────────────┐
-  │  AMD Severity Score  S_AMD           │
-  │  REE Opportunity Score  S_REE        │
-  └──────────────────────────────────────┘
-          │
-          ▼
-   Spatial Interpolation (IDW)
-          │
-          ▼
-   ArcGIS Online  ──►  Web Dashboard
-```
-
----
-
 ## Scoring Model
 
 ### Normalization
@@ -73,7 +39,6 @@ For pH, lower values indicate higher acidity risk — so the scale is inverted:
 
 $$\widetilde{pH}^{risk}_i = \frac{\max(pH) - pH_i}{\max(pH) - \min(pH)}$$
 
----
 
 ### AMD Severity Score
 
@@ -91,7 +56,6 @@ $$S_i^{AMD} = 0.30\,\widetilde{pH}^{risk}_i + 0.20\,\widetilde{SO_4}_i + 0.20\,\
 
 Higher score = stronger contamination intensity.
 
----
 
 ### REE Opportunity Score
 
@@ -103,7 +67,6 @@ $$C_i^{comp} = Ca_i + Fe_i + Al_i + Mn_i + K_i + Mg_i + Na_i$$
 
 Higher score = better extraction feasibility. The penalty term captures competing ions that reduce REE separation efficiency.
 
----
 
 ### Spatial Interpolation (IDW)
 
@@ -113,7 +76,6 @@ $$\hat{S}(x) = \frac{\displaystyle\sum_i \frac{S_i}{d(x,\, x_i)^2}}{\displaystyl
 
 This enables watershed-level prioritization rather than site-by-site inspection.
 
----
 
 ## Technical Stack
 
@@ -125,8 +87,6 @@ This enables watershed-level prioritization rather than site-by-site inspection.
 | Interpolation | IDW via ArcGIS spatial analyst |
 | Deployment | ArcGIS Online (hosted feature layers + web maps) |
 | Frontend | HTML/JS — embedded ArcGIS experience |
-
----
 
 ## Research Depth: Methods Explored
 
@@ -173,20 +133,6 @@ Updated scripts for newer ArcGIS API patterns and added defensive fallbacks for 
 **Data availability gaps**
 Used publicly available WV-focused water quality sources and structured sample data to maintain forward progress.
 
----
-
-## Repository Structure
-
-```
-.
-├── config/          # Layer definitions, symbology rules, endpoint metadata
-├── data/            # Source and sample datasets
-├── docs/            # Project notes, data dictionary, workflow docs
-├── scripts/         # ArcGIS publishing and integration scripts
-└── index.html       # Public-facing site with embedded ArcGIS map
-```
-
----
 
 ## Broader Context
 
