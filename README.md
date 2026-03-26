@@ -61,6 +61,7 @@ $$\hat{S}(x) = \frac{\displaystyle\sum_i \frac{S_i}{d(x,\, x_i)^2}}{\displaystyl
 
 This enables watershed-level prioritization rather than site-by-site inspection.
 
+Link to data for feature layer on ARCGIS: https://drive.google.com/drive/folders/17dOjYHXUXFMO_gGn4r0AVtbWEpLjqYFX?usp=sharing
 
 ## Technical Stack
 
