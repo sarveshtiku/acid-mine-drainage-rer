@@ -1,169 +1,197 @@
-# West Virginia AMD + REE Research Mapping Project
+# AMD + REE Spatial Intelligence Platform
+### West Virginia Acid Mine Drainage & Rare Earth Element Mapping
 
-This project documents my research and build process for mapping **acid mine drainage (AMD)** risk and **rare earth element (REE)** opportunity in West Virginia, then translating that analysis into a usable web map/dashboard for real decisions.
+![Python](https://img.shields.io/badge/Python-3.12-3776AB?style=flat-square&logo=python&logoColor=white)
+![ArcGIS](https://img.shields.io/badge/ArcGIS-Online-2C7AC3?style=flat-square&logo=esri&logoColor=white)
+![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![Status](https://img.shields.io/badge/Status-Active-brightgreen?style=flat-square)
 
-The goal is practical: help boots-on-the-ground teams prioritize where to test, monitor, and intervene so cleanup and recovery efforts have higher impact.
+---
 
-## Problem I am solving
+## Overview
 
-West Virginia has legacy mining impacts that continue to affect stream chemistry. AMD lowers pH and increases dissolved metals, harming ecosystems and water usability. At the same time, AMD-impacted waters can contain REE signals that may support future recovery pathways if extraction becomes feasible.
+A full-stack geospatial pipeline that transforms raw water chemistry data into actionable decision-support maps for AMD remediation and REE recovery in West Virginia. Built on a custom multi-factor scoring model, IDW spatial interpolation, and ArcGIS Online as the deployment layer.
 
-The challenge is not just scientific; it is operational:
+The goal: help field teams prioritize where to test, monitor, and intervene — with transparent methods and downloadable outputs.
 
-- field teams need a clear spatial picture of where contamination is worst
-- stakeholders need transparent metrics, not black-box maps
-- planners need downloadable data and simple tools, not one-off analyses
+---
 
-## Research approach
+## The Problem
 
-I designed a combined AMD-risk + REE-opportunity framework that turns chemistry and location data into interpretable map layers.
+West Virginia's legacy mining footprint continuously degrades stream chemistry. AMD lowers pH and concentrates dissolved metals, harming ecosystems and water usability across entire watersheds.
 
-### Variables tracked at each site
+At the same time, AMD-impacted waters carry REE signals that may support domestic critical-mineral recovery — if extraction conditions are right.
 
-- pH
-- sulfate (SO4)
-- iron (Fe)
-- aluminum (Al)
-- manganese (Mn)
-- calcium (Ca)
-- optional flow rate (Q)
+The challenge is operational, not just scientific:
 
-### Normalization concept
+| Stakeholder | Need |
+|---|---|
+| Field teams | Clear spatial picture of worst contamination |
+| Planners | Downloadable data, not one-off analyses |
+| Stakeholders | Transparent metrics, not black-box maps |
 
-All variables are normalized to make values comparable across different scales:
+---
 
-$$
-\tilde{x}_i = \frac{x_i - \min(x)}{\max(x) - \min(x)}
-$$
+## System Architecture
 
-For acidity risk (where lower pH is worse):
+```
+Raw Water Chemistry Data (USGS / WQP)
+          │
+          ▼
+   Feature Engineering
+  ┌──────────────────────────────────────┐
+  │  Min-Max Normalization               │
+  │  pH Risk Inversion                   │
+  │  Competitive Cation Burden Calc      │
+  └──────────────────────────────────────┘
+          │
+          ▼
+   Composite Scoring Engine
+  ┌──────────────────────────────────────┐
+  │  AMD Severity Score  S_AMD           │
+  │  REE Opportunity Score  S_REE        │
+  └──────────────────────────────────────┘
+          │
+          ▼
+   Spatial Interpolation (IDW)
+          │
+          ▼
+   ArcGIS Online  ──►  Web Dashboard
+```
 
-$$
-\tilde{pH}^{risk}_i = \frac{\max(pH) - pH_i}{\max(pH) - \min(pH)}
-$$
+---
 
-### AMD severity score (conceptual model)
+## Scoring Model
 
-$$
-S_i^{AMD} = 0.30\tilde{pH}^{risk}_i + 0.20\tilde{SO4}_i + 0.20\tilde{Fe}_i + 0.15\tilde{Al}_i + 0.15\tilde{Mn}_i
-$$
+### Normalization
 
-Interpretation: higher score means stronger contamination intensity.
+All variables are normalized to [0, 1] for cross-parameter comparability:
 
-### Competitive cation burden
+$$\tilde{x}_i = \frac{x_i - \min(x)}{\max(x) - \min(x)}$$
 
-$$
-C_i^{comp} = Ca_i + Fe_i + Al_i + Mn_i + K_i + Mg_i + Na_i
-$$
+For pH, lower values indicate higher acidity risk — so the scale is inverted:
 
-Interpretation: higher competing ions can reduce REE extraction efficiency.
+$$\widetilde{pH}^{risk}_i = \frac{\max(pH) - pH_i}{\max(pH) - \min(pH)}$$
 
-### REE opportunity score (conceptual model)
+---
 
-$$
-S_i^{REE} = 0.45\tilde{REEsource}_i + 0.25\tilde{pH}^{extract}_i - 0.30\tilde{C}^{comp}_i
-$$
+### AMD Severity Score
 
-Interpretation:
+Weighted linear combination across five chemistry parameters:
 
-- REE source potential increases with sulfate/metals/acidity proxies
-- extraction potential improves with higher pH conditions
-- extraction potential decreases with high competing ion burden
+$$S_i^{AMD} = 0.30\,\widetilde{pH}^{risk}_i + 0.20\,\widetilde{SO_4}_i + 0.20\,\widetilde{Fe}_i + 0.15\,\widetilde{Al}_i + 0.15\,\widetilde{Mn}_i$$
 
-### Spatial mapping logic
+| Parameter | Weight | Rationale |
+|---|---|---|
+| pH (inverted) | 0.30 | Primary acidity driver |
+| SO4 | 0.20 | Sulfate — AMD proxy |
+| Fe | 0.20 | Iron — mobilization indicator |
+| Al | 0.15 | Aluminum toxicity |
+| Mn | 0.15 | Manganese — downstream risk |
 
-Point measurements are interpolated to create continuous surfaces and hotspot regions:
+Higher score = stronger contamination intensity.
 
-$$
-\hat{S}(x) = \frac{\sum_i \frac{S_i}{d(x,x_i)^2}}{\sum_i \frac{1}{d(x,x_i)^2}}
-$$
+---
 
-This supports watershed-level prioritization, not just site-by-site inspection.
+### REE Opportunity Score
 
-## Research depth: methods I worked through before landing on ArcGIS
+$$S_i^{REE} = 0.45\,\widetilde{REE}_{source,i} + 0.25\,\widetilde{pH}^{extract}_i - 0.30\,\widetilde{C}^{comp}_i$$
 
-This project was not a one-tool build. I moved through multiple technical approaches to understand flow behavior, terrain context, and real water quality chemistry before converging on ArcGIS Online as the best platform for communication and deployment.
+Where competitive cation burden is:
 
-### 1) Hydraulic and floodplain modeling workflow (HEC-RAS / RAS Mapper)
+$$C_i^{comp} = Ca_i + Fe_i + Al_i + Mn_i + K_i + Mg_i + Na_i$$
 
-I worked with HEC-RAS-style hydraulic mapping to understand flow patterns, velocity distributions, and inundation behavior in valley systems. This gave me process-level intuition for how contaminated water moves and where monitoring should be spatially concentrated.
+Higher score = better extraction feasibility. The penalty term captures competing ions that reduce REE separation efficiency.
+
+---
+
+### Spatial Interpolation (IDW)
+
+Point scores are interpolated to continuous surfaces using Inverse Distance Weighting:
+
+$$\hat{S}(x) = \frac{\displaystyle\sum_i \frac{S_i}{d(x,\, x_i)^2}}{\displaystyle\sum_i \frac{1}{d(x,\, x_i)^2}}$$
+
+This enables watershed-level prioritization rather than site-by-site inspection.
+
+---
+
+## Technical Stack
+
+| Layer | Tool |
+|---|---|
+| Data ingestion | USGS Water Quality Portal (WQP), OGC services |
+| Processing & scoring | Python 3.12, pandas, numpy |
+| Geospatial ops | ArcGIS API for Python, shapely |
+| Interpolation | IDW via ArcGIS spatial analyst |
+| Deployment | ArcGIS Online (hosted feature layers + web maps) |
+| Frontend | HTML/JS — embedded ArcGIS experience |
+
+---
+
+## Research Depth: Methods Explored
+
+This was not a one-tool build. Several technical approaches were worked through to build real process intuition before converging on ArcGIS Online as the deployment platform.
+
+### Hydraulic & Floodplain Modeling (HEC-RAS style)
+
+Flow patterns, velocity distributions, and inundation behavior in valley systems — providing process-level intuition for how contaminated water moves and where monitoring should concentrate.
 
 ![HEC-RAS style hydraulic mapping workflow](website-images/Trail-2.png)
 
-Why this mattered:
+### Cartographic & Terrain Context (Legacy ArcMap style)
 
-- improved interpretation of drainage pathways and concentration zones
-- helped frame where AMD chemistry is likely to intensify
-- informed how watershed context layers should be presented in GIS
-
-### 2) Cartographic and terrain-context workflow (legacy ArcMap-style practice)
-
-I also worked through traditional map-authoring approaches (layer stacks, basemap interpretation, scale-aware cartography, and thematic overlays). This stage helped refine visual storytelling and readability before building the public-facing web product.
+Layer stacks, basemap interpretation, scale-aware cartography, and thematic overlays — used to refine visual storytelling before building the public-facing product.
 
 ![Legacy ArcMap-style cartographic workflow](website-images/Trail-1.png)
 
-Why this mattered:
+### USGS Provisional Data Workflow
 
-- made the final map easier for non-technical users to interpret
-- improved symbol hierarchy for risk and opportunity overlays
-- helped bridge scientific analysis and stakeholder communication
-
-### 3) USGS provisional and station-query data workflow
-
-Before final ArcGIS integration, I worked with USGS-style provisional station data interfaces and tabular query outputs (time windows, station-level parameter retrieval, and export-driven review). This was key for understanding the operational reality of field-measurement data quality and continuity.
+Station-level parameter retrieval, time-window queries, and export-driven review — grounding the model in real field data quality constraints and temporal gap analysis.
 
 ![USGS provisional station data workflow](website-images/Provisional-Data.png)
 
-Why this mattered:
+### Final Integration: ArcGIS Online
 
-- grounded the model in real parameter streams (pH, conductivity, metals proxies)
-- exposed limitations of station completeness and temporal gaps
-- informed the hybrid strategy (live services where possible, hosted layers where needed)
+After these stages, ArcGIS Online was selected for:
+- Compositing spatial layers (risk + opportunity + watershed context)
+- Popups and dashboards for non-technical interpretation
+- Public sharing and export for real partner collaboration
 
-### 4) Final integration: ArcGIS Online as decision-support interface
+---
 
-After these stages, ArcGIS Online became the best final environment because it combines:
+## Key Engineering Challenges
 
-- spatial layers (risk + opportunity + watershed context)
-- popups and dashboards for interpretation
-- public sharing and export options for real collaboration
+**ArcGIS auth complexity (org + SSO)**
+Moved from one-shot automation to a hybrid workflow — scripted where reliable, AGOL UI where faster and more stable.
 
-The result is a workflow that remains scientifically grounded while being usable by practitioners, local partners, and decision-makers.
+**USGS OGC ingestion instability in AGOL**
+Switched to WQP/CSV-hosted layer workflows when direct OGC item behavior was inconsistent.
 
-## What I built
+**API/library compatibility**
+Updated scripts for newer ArcGIS API patterns and added defensive fallbacks for version drift.
 
-- a research-driven ArcGIS map experience for WV AMD + REE context
-- hosted and/or manually managed layers for water quality points, chemistry, and watershed context
-- a web page that embeds the live ArcGIS map for public-facing communication
-- project documentation so methods, assumptions, and data handling are visible
+**Data availability gaps**
+Used publicly available WV-focused water quality sources and structured sample data to maintain forward progress.
 
-## Major build challenges and how I solved them
+---
 
-- **ArcGIS auth complexity (org + SSO):** moved from one-shot automation to a hybrid workflow (scripted where reliable, AGOL UI where faster and more stable).
-- **USGS OGC ingestion issues in AGOL:** used WQP/CSV-hosted layer workflows when direct OGC item behavior was inconsistent.
-- **API/library compatibility issues:** updated scripts for newer ArcGIS API patterns and added defensive fallbacks.
-- **Data availability gaps at project start:** used publicly available WV-focused water quality sources and structured placeholder/sample data to keep progress moving.
+## Repository Structure
 
-## Why this matters for real-world impact
+```
+.
+├── config/          # Layer definitions, symbology rules, endpoint metadata
+├── data/            # Source and sample datasets
+├── docs/            # Project notes, data dictionary, workflow docs
+├── scripts/         # ArcGIS publishing and integration scripts
+└── index.html       # Public-facing site with embedded ArcGIS map
+```
 
-This is not a finished production system yet, but it creates a strong decision-support foundation:
+---
 
-- identify potential AMD hotspots faster
-- compare contamination severity across watersheds
-- highlight zones where REE-related follow-up sampling is worth the effort
-- make findings visible to technical and non-technical stakeholders
-- keep data downloadable so partners can independently validate and act
+## Broader Context
 
-In short: this project turns fragmented chemistry/location data into a practical spatial workflow that can better guide remediation and monitoring priorities in West Virginia.
+This work aligns with growing evidence that AMD streams can be both an environmental liability and a domestic critical-mineral resource. See Yale E360: [In Hunt for Rare Earths, Companies Are Scouring Mining Waste](https://e360.yale.edu/features/mining-waste-rare-earth-minerals) — including WV pilot efforts and policy/monitoring caveats.
 
-## Broader research context
+---
 
-This work aligns with a growing body of evidence that mine waste and AMD streams can be both an environmental liability and a potential domestic critical-mineral resource when managed responsibly. A useful public overview is Yale E360’s reporting on REE recovery from mining waste and AMD-linked streams, including West Virginia pilot efforts and policy/monitoring caveats: [In Hunt for Rare Earths, Companies Are Scouring Mining Waste](https://e360.yale.edu/features/mining-waste-rare-earth-minerals).
-
-## Repository contents
-
-- `config/`: layer definitions, symbology rules, endpoint metadata
-- `data/`: source and sample datasets used during build/testing
-- `docs/`: project notes, data dictionary, workflow and deliverables
-- `scripts/`: automation scripts for ArcGIS publishing/integration attempts
-- `index.html`: public-facing site that embeds the ArcGIS map
+> Built to turn fragmented chemistry and location data into a practical spatial workflow for remediation and monitoring prioritization in West Virginia.
