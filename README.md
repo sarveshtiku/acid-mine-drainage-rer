@@ -1,75 +1,169 @@
-# AMD + REE Live Mapping and Dashboard (ArcGIS Online)
+# West Virginia AMD + REE Research Mapping Project
 
-Build the **AMD (acid mine drainage) + REE (rare earth elements)** live mapping and dashboard in **ArcGIS Online** and **ArcGIS Pro** using USGS Water Data OGC API and your geoprocessed AMD/REE score data.
+This project documents my research and build process for mapping **acid mine drainage (AMD)** risk and **rare earth element (REE)** opportunity in West Virginia, then translating that analysis into a usable web map/dashboard for real decisions.
 
-## Quick start
+The goal is practical: help boots-on-the-ground teams prioritize where to test, monitor, and intervene so cleanup and recovery efforts have higher impact.
 
-1. **Prerequisites**: ArcGIS Online org account, Python 3.8+, [ArcGIS API for Python](https://developers.arcgis.com/python/) (`pip install arcgis`).
-2. **Sign in once**: `python -c "from arcgis.gis import GIS; GIS(profile='home')"` and complete login (browser or username/password).
-3. **Add your data** under `data/`: see [data/README.md](data/README.md). Sample `water_quality_points.csv` is included.
-4. **Run the pipeline**:
-   ```bash
-   pip install -r requirements.txt
-   python scripts/run_all.py
-   ```
-   Or run steps individually: `01_project_setup.py` → `02_publish_hosted_layers.py` → `03_ogc_layers.py` → `04_web_map.py` → `05_dashboard.py` → `06_share_and_download.py`.
+## Problem I am solving
 
-5. **Manual steps in AGOL** (if needed):
-   - **Symbology**: In Map Viewer, set AMD layer to heatmap, REE to graduated colors, water quality to points, hydrology to outlines (see [config/symbology.json](config/symbology.json)).
-   - **Popups**: Configure in Map Viewer per layer (field aliases in [config/layers.json](config/layers.json)).
-   - **Dashboard**: If the script does not create the dashboard, open the Web Map → **Create App** → **Dashboards**; add Map, Indicators (e.g. count of high-severity reaches, average REE potential), Filters (date range, watershed), Charts/Tables; set table action to zoom map to record.
-   - **OGC refresh**: For each USGS OGC layer, set refresh interval (e.g. 30–60 min) in layer properties in the map or in item settings.
+West Virginia has legacy mining impacts that continue to affect stream chemistry. AMD lowers pH and increases dissolved metals, harming ecosystems and water usability. At the same time, AMD-impacted waters can contain REE signals that may support future recovery pathways if extraction becomes feasible.
 
-## What the build does (steps 1–10)
+The challenge is not just scientific; it is operational:
 
-| Step | Script / action | Result |
-|------|------------------|--------|
-| 1 | `01_project_setup.py` | Folder **AMD_REE_Portal**; standard metadata (title, summary, tags). |
-| 2 | `02_publish_hosted_layers.py` | Hosted Feature Layers (AMD severity, REE potential, water quality points, hydrology); Export Data (CSV, Shapefile, GeoJSON); Feature Layer Views with filters. |
-| 3 | `03_ogc_layers.py` | USGS OGC API – Features layers added from [api.waterdata.usgs.gov/ogcapi/v0](https://api.waterdata.usgs.gov/ogcapi/v0) (monitoring locations, field measurements, daily values). |
-| 4 | `04_web_map.py` | Web Map **AMD_REE_InteractiveMap** with all layers; symbology and popups can be refined in Map Viewer. |
-| 5 | `05_dashboard.py` | Dashboard from the web map (or instructions to create it manually with Map, Indicators, Filters, Charts/Tables, actions). |
-| 6 | `06_share_and_download.py` | Web Map and Dashboard shared publicly; Export Data enabled on hosted layers. |
-| 7 | Docs | [docs/DATA_DICTIONARY.md](docs/DATA_DICTIONARY.md), [docs/ReadMe_layer_content.md](docs/ReadMe_layer_content.md); add ReadMe text to map. |
-| 8 | Config | Refresh intervals in [config/usgs_ogc_endpoints.json](config/usgs_ogc_endpoints.json); republish hosted layers on your schedule (e.g. daily). |
-| 9 | QA | Validate popups, filters, and downloads (CSV/GeoJSON/Shapefile) in Map Viewer and Dashboard; test in multiple browsers. |
-| 10 | [docs/DELIVERABLES.md](docs/DELIVERABLES.md) | Fill in item URLs (from `config/portal_state.json`) for Web Map, Dashboard, each Hosted Layer, USGS OGC layers, and download links. |
+- field teams need a clear spatial picture of where contamination is worst
+- stakeholders need transparent metrics, not black-box maps
+- planners need downloadable data and simple tools, not one-off analyses
 
-## Project layout
+## Research approach
 
-```
-config/           # Layer definitions, symbology, USGS OGC URLs, metadata defaults
-data/             # Your feature data (CSV, Shapefile, GeoJSON)
-docs/             # Data dictionary, ReadMe text, DELIVERABLES template
-scripts/          # 01–06 Python scripts + run_all.py
-```
+I designed a combined AMD-risk + REE-opportunity framework that turns chemistry and location data into interpretable map layers.
 
-## Configuration
+### Variables tracked at each site
 
-- **ArcGIS profile**: Set `ARCGIS_PROFILE` (e.g. `home`) or use default.
-- **USGS API key** (optional, for higher rate limits): Copy [.env.example](.env.example) to `.env` and set `USGS_API_KEY=your_key`. Never commit `.env`; it is gitignored. The key is used when adding OGC layers so AGOL can call USGS with the key.
-- **Layers**: [config/layers.json](config/layers.json) – titles, id/date fields, aliases, view filters.
-- **USGS OGC**: [config/usgs_ogc_endpoints.json](config/usgs_ogc_endpoints.json) – collection URLs, refresh minutes, popup fields.
-- **Symbology**: [config/symbology.json](config/symbology.json) – heatmap (AMD), graduated (REE), point, outline.
+- pH
+- sulfate (SO4)
+- iron (Fe)
+- aluminum (Al)
+- manganese (Mn)
+- calcium (Ca)
+- optional flow rate (Q)
 
-## Maintenance
+### Normalization concept
 
-- **Hosted layers**: Re-run your geoprocessing; overwrite or append to the hosted layers (e.g. via ArcGIS API for Python or Pro), or republish from updated files with `02_publish_hosted_layers.py` (replace items as needed).
-- **OGC layers**: Refresh interval is set in AGOL (e.g. 30–60 min) per layer.
-- **Dashboard**: Edit in ArcGIS Dashboards; add download button linking to each hosted layer’s item page if desired.
+All variables are normalized to make values comparable across different scales:
 
-## USGS OGC API + ArcGIS Online
+\[
+\tilde{x}_i = \frac{x_i - \min(x)}{\max(x) - \min(x)}
+\]
 
-USGS real-time water data is added as **OGC API – Features** layers. ArcGIS Online accepts the **items** endpoint (returns GeoJSON), e.g.:
+For acidity risk (where lower pH is worse):
 
-- `https://api.waterdata.usgs.gov/ogcapi/v0/collections/latest-continuous/items?parameter-codes=00400,00095`
-- **Add Item** → **From URL** → **OGC API-Features** → paste URL → add to Web Map → set refresh interval.
+\[
+\tilde{pH}^{risk}_i = \frac{\max(pH) - pH_i}{\max(pH) - \min(pH)}
+\]
 
-**Caveats:** ~3,000 features per request (use `limit` or `bbox` if needed); OGC layers are read-only; use Web Mercator for best display. Full workflow: [docs/USGS_ARCGIS_WORKFLOW.md](docs/USGS_ARCGIS_WORKFLOW.md).
+### AMD severity score (conceptual model)
 
-## References
+\[
+S_i^{AMD} = 0.30\tilde{pH}^{risk}_i + 0.20\tilde{SO4}_i + 0.20\tilde{Fe}_i + 0.15\tilde{Al}_i + 0.15\tilde{Mn}_i
+\]
 
-- [USGS Water Data OGC API](https://api.waterdata.usgs.gov/docs/ogcapi)
-- [Add layers from URL (OGC API – Features)](https://doc.arcgis.com/en/arcgis-online/create-maps/add-layers-from-url.htm)
-- [ArcGIS API for Python](https://developers.arcgis.com/python/)
-- [Authoring ArcGIS Dashboards (Python)](https://developers.arcgis.com/python/guide/authoring-arcgis-dashboards/)
+Interpretation: higher score means stronger contamination intensity.
+
+### Competitive cation burden
+
+\[
+C_i^{comp} = Ca_i + Fe_i + Al_i + Mn_i + K_i + Mg_i + Na_i
+\]
+
+Interpretation: higher competing ions can reduce REE extraction efficiency.
+
+### REE opportunity score (conceptual model)
+
+\[
+S_i^{REE} = 0.45\tilde{REEsource}_i + 0.25\tilde{pH}^{extract}_i - 0.30\tilde{C}^{comp}_i
+\]
+
+Interpretation:
+
+- REE source potential increases with sulfate/metals/acidity proxies
+- extraction potential improves with higher pH conditions
+- extraction potential decreases with high competing ion burden
+
+### Spatial mapping logic
+
+Point measurements are interpolated to create continuous surfaces and hotspot regions:
+
+\[
+\hat{S}(x) = \frac{\sum_i \frac{S_i}{d(x,x_i)^2}}{\sum_i \frac{1}{d(x,x_i)^2}}
+\]
+
+This supports watershed-level prioritization, not just site-by-site inspection.
+
+## Research depth: methods I worked through before landing on ArcGIS
+
+This project was not a one-tool build. I moved through multiple technical approaches to understand flow behavior, terrain context, and real water quality chemistry before converging on ArcGIS Online as the best platform for communication and deployment.
+
+### 1) Hydraulic and floodplain modeling workflow (HEC-RAS / RAS Mapper)
+
+I worked with HEC-RAS-style hydraulic mapping to understand flow patterns, velocity distributions, and inundation behavior in valley systems. This gave me process-level intuition for how contaminated water moves and where monitoring should be spatially concentrated.
+
+![HEC-RAS style hydraulic mapping workflow](website-images/Trail-2.png)
+
+Why this mattered:
+
+- improved interpretation of drainage pathways and concentration zones
+- helped frame where AMD chemistry is likely to intensify
+- informed how watershed context layers should be presented in GIS
+
+### 2) Cartographic and terrain-context workflow (legacy ArcMap-style practice)
+
+I also worked through traditional map-authoring approaches (layer stacks, basemap interpretation, scale-aware cartography, and thematic overlays). This stage helped refine visual storytelling and readability before building the public-facing web product.
+
+![Legacy ArcMap-style cartographic workflow](website-images/Trail-1.png)
+
+Why this mattered:
+
+- made the final map easier for non-technical users to interpret
+- improved symbol hierarchy for risk and opportunity overlays
+- helped bridge scientific analysis and stakeholder communication
+
+### 3) USGS provisional and station-query data workflow
+
+Before final ArcGIS integration, I worked with USGS-style provisional station data interfaces and tabular query outputs (time windows, station-level parameter retrieval, and export-driven review). This was key for understanding the operational reality of field-measurement data quality and continuity.
+
+![USGS provisional station data workflow](website-images/Provisional-Data.png)
+
+Why this mattered:
+
+- grounded the model in real parameter streams (pH, conductivity, metals proxies)
+- exposed limitations of station completeness and temporal gaps
+- informed the hybrid strategy (live services where possible, hosted layers where needed)
+
+### 4) Final integration: ArcGIS Online as decision-support interface
+
+After these stages, ArcGIS Online became the best final environment because it combines:
+
+- spatial layers (risk + opportunity + watershed context)
+- popups and dashboards for interpretation
+- public sharing and export options for real collaboration
+
+The result is a workflow that remains scientifically grounded while being usable by practitioners, local partners, and decision-makers.
+
+## What I built
+
+- a research-driven ArcGIS map experience for WV AMD + REE context
+- hosted and/or manually managed layers for water quality points, chemistry, and watershed context
+- a web page that embeds the live ArcGIS map for public-facing communication
+- project documentation so methods, assumptions, and data handling are visible
+
+## Major build challenges and how I solved them
+
+- **ArcGIS auth complexity (org + SSO):** moved from one-shot automation to a hybrid workflow (scripted where reliable, AGOL UI where faster and more stable).
+- **USGS OGC ingestion issues in AGOL:** used WQP/CSV-hosted layer workflows when direct OGC item behavior was inconsistent.
+- **API/library compatibility issues:** updated scripts for newer ArcGIS API patterns and added defensive fallbacks.
+- **Data availability gaps at project start:** used publicly available WV-focused water quality sources and structured placeholder/sample data to keep progress moving.
+
+## Why this matters for real-world impact
+
+This is not a finished production system yet, but it creates a strong decision-support foundation:
+
+- identify potential AMD hotspots faster
+- compare contamination severity across watersheds
+- highlight zones where REE-related follow-up sampling is worth the effort
+- make findings visible to technical and non-technical stakeholders
+- keep data downloadable so partners can independently validate and act
+
+In short: this project turns fragmented chemistry/location data into a practical spatial workflow that can better guide remediation and monitoring priorities in West Virginia.
+
+## Broader research context
+
+This work aligns with a growing body of evidence that mine waste and AMD streams can be both an environmental liability and a potential domestic critical-mineral resource when managed responsibly. A useful public overview is Yale E360’s reporting on REE recovery from mining waste and AMD-linked streams, including West Virginia pilot efforts and policy/monitoring caveats: [In Hunt for Rare Earths, Companies Are Scouring Mining Waste](https://e360.yale.edu/features/mining-waste-rare-earth-minerals).
+
+## Repository contents
+
+- `config/`: layer definitions, symbology rules, endpoint metadata
+- `data/`: source and sample datasets used during build/testing
+- `docs/`: project notes, data dictionary, workflow and deliverables
+- `scripts/`: automation scripts for ArcGIS publishing/integration attempts
+- `index.html`: public-facing site that embeds the ArcGIS map
