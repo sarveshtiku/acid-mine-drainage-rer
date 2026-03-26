@@ -12,14 +12,14 @@
 
 A full-stack geospatial pipeline that transforms raw water chemistry data into actionable decision-support maps for AMD remediation and REE recovery in West Virginia. Built on a custom multi-factor scoring model, IDW spatial interpolation, and ArcGIS Online as the deployment layer.
 
-The goal: help field teams prioritize where to test, monitor, and intervene — with transparent methods and downloadable outputs.
+The goal: help field teams (boots on the ground) prioritize where to test, monitor, and intervene, with transparent methods and downloadable outputs.
 
 
 ## The Problem
 
 West Virginia's legacy mining footprint continuously degrades stream chemistry. AMD lowers pH and concentrates dissolved metals, harming ecosystems and water usability across entire watersheds.
 
-At the same time, AMD-impacted waters carry REE signals that may support domestic critical-mineral recovery — if extraction conditions are right.
+At the same time, AMD-impacted waters carry REE signals that may support domestic critical-mineral recovery, if extraction conditions are right.
 
 The challenge is operational, not just scientific:
 
@@ -96,13 +96,13 @@ This was not a one-tool build. Several technical approaches were worked through 
 
 ### Hydraulic & Floodplain Modeling (HEC-RAS style)
 
-Flow patterns, velocity distributions, and inundation behavior in valley systems — providing process-level intuition for how contaminated water moves and where monitoring should concentrate.
+Flow patterns, velocity distributions, and inundation behavior in valley systems. Providing process-level intuition for how contaminated water moves and where monitoring should concentrate.
 
 ![HEC-RAS style hydraulic mapping workflow](website-images/Trail-2.png)
 
 ### Cartographic & Terrain Context (Legacy ArcMap style)
 
-Layer stacks, basemap interpretation, scale-aware cartography, and thematic overlays — used to refine visual storytelling before building the public-facing product.
+Layer stacks, basemap interpretation, scale-aware cartography, and thematic overlays. Used to refine visual storytelling before building the public-facing product.
 
 ![Legacy ArcMap-style cartographic workflow](website-images/Trail-1.png)
 
@@ -124,7 +124,7 @@ After these stages, ArcGIS Online was selected for:
 ## Key Engineering Challenges
 
 **ArcGIS auth complexity (org + SSO)**
-Moved from one-shot automation to a hybrid workflow — scripted where reliable, AGOL UI where faster and more stable.
+Moved from one-shot automation to a hybrid workflow: scripted where reliable, AGOL UI where faster and more stable.
 
 **USGS OGC ingestion instability in AGOL**
 Switched to WQP/CSV-hosted layer workflows when direct OGC item behavior was inconsistent.
